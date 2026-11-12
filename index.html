@@ -88,6 +88,15 @@ th{font-weight:600;color:var(--ink2);font-size:12.5px;text-transform:uppercase;l
 .quote{font:italic 22px/1.5 var(--serif);border-left:3px solid var(--accent);padding:6px 0 6px 18px;margin:26px 0;color:var(--ink)}
 .themebtn,.langbtn{position:fixed;top:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;z-index:5;text-decoration:none;font-family:var(--sans)}
 .themebtn{right:12px}.langbtn{right:100px}
+.claims{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.claim{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;padding:16px 18px}
+.claim .ck{font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.claim h4{margin:4px 0 6px;font:700 19px/1.3 var(--serif)}
+.claim p{color:var(--ink2);font-size:15px}
+.claim ul{margin:6px 0 0;padding-left:18px;font-size:14.5px}
+.claim li{margin:4px 0}
+@media (max-width:640px){.claims{grid-template-columns:1fr}}
+.lessons li .cl{display:inline-block;font:600 10.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 7px;margin-bottom:4px}
 footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink3);font-size:13px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:4px 0 6px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
@@ -111,6 +120,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:v
 
 <section id="abs" class="abstract">
   <p><b>Abstract.</b> The goal was simple: make the expensive model (Claude Opus) do less and the cheap one (DeepSeek) do more. Within a single day the dispatch rule, a Claude Code skill called <code>delegate-coding</code>, went from v0.3 to v2.1. Along the way it gained quota-based tier switching, code summarizers, spec writers, first-pass reviews, final reviews, gates, a ledger, sandbox copies and multi-round rework — and then lost almost all of them. The measurements say: <b>every extra machine check adds another place where checks contradict each other</b>. Only three things earned their keep: give the executor its full toolset, impose one hard turn limit, and have a strong model do one independent review. The final version is <b>14%</b> of the peak code size, and it finished on the first try the task that deadlocked v1.0. Also: one key fact (<code>--bare</code> makes subagents disappear) was written down twice and still got re-learned a third time.</p>
+  <p><b>The core idea.</b> Don't over-think the architecture. With strong models, architecture is quite likely to <i>get in the way</i>; and a process design, however reasonable it looks on paper, is quite likely <i>untested speculation</i>.</p>
 </section>
 
 <section id="bg">
@@ -218,8 +228,48 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:v
 
 <section id="concl">
 <h2><span class="n">5</span>The lesson</h2>
-<div class="quote">Hand-built process machinery layered on top of AI agents loses, in the long run, to: the full toolset, one hard limit, and one independent review by a strong model.</div>
-<p>Rich Sutton's <i>The Bitter Lesson</i> argues that general methods which leverage computation eventually beat methods that encode human knowledge by hand. We walked through a miniature version of that in a single day. Click each point to see the evidence.</p>
+<div class="quote">Don't over-think the architecture. It quite likely gets in a strong model's way — and the process you designed is quite likely speculation nobody has tested.</div>
+<p>Rich Sutton's <i>The Bitter Lesson</i> argues that general methods which leverage computation eventually beat methods that encode human knowledge by hand. We walked through a miniature version of that in a single day. It comes down to two claims.</p>
+
+<div class="claims">
+  <div class="claim">
+    <div class="ck">Claim 1</div>
+    <h4>Architecture gets in a strong model's way</h4>
+    <p>Every layer we added narrowed what the capable model could see or do.</p>
+    <ul>
+      <li>In route B, Opus wrote the spec from a <i>Flash summary</i> instead of the code — the architecture fed the strongest model the weakest model's view.</li>
+      <li>The gate and the acceptance command contradicted each other, so a capable executor could not succeed whatever it did (Figure 5).</li>
+      <li><code>--bare</code> “for isolation” silently took away subagents — the one capability that lets a model organize its own work (Figure 6).</li>
+      <li>The relay layer made Haiku guess intent instead of simply answering.</li>
+      <li>What actually caught bugs was the opposite of structure: one strong model reading the diff freely (Figure 2).</li>
+    </ul>
+  </div>
+  <div class="claim">
+    <div class="ck">Claim 2</div>
+    <h4>Process design is often untested speculation</h4>
+    <p>Most of what we built was justified by reasoning, not by a failure it had prevented.</p>
+    <ul>
+      <li>V2 had a 37-item design inventory; only a handful were ever exercised by an experiment (T0–T6).</li>
+      <li>The 80% / 70% quota thresholds were picked, never validated.</li>
+      <li>The gate's real catch rate was never measured — it was deleted first.</li>
+      <li>30 unit tests proved the machinery worked, not that it helped; the first real job failed.</li>
+      <li>The “who writes the spec” tier decision rested on a single task.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fig">
+  <h4 style="margin:0 0 6px;font:600 16px var(--sans)">What to do instead</h4>
+  <ol style="margin:0;padding-left:20px">
+    <li>Start with the simplest thing: give the model the task and its full toolset.</li>
+    <li>Add one hard limit the script enforces (turns), not a rule the model must remember.</li>
+    <li>Run a real job. Add a mechanism only after a real failure it would have prevented — and measure it.</li>
+    <li>Keep one independent review by a strong model; drop the rest until data says otherwise.</li>
+  </ol>
+</div>
+
+<h3>Seven observations behind the two claims</h3>
+<p style="color:var(--ink2)">Click each one for the evidence.</p>
 <ol class="lessons" id="lessons"></ol>
 </section>
 
@@ -404,7 +454,8 @@ const LS=[
  ['Run one real job before adding machinery.','v1.0.0\'s 30 unit tests (against a fake claude) all passed; the first real job failed. The tests verified the mechanism, not whether the mechanism helped on real work.'],
  ['Giving the executor its full toolset beats orchestrating for it.','The whole summary → spec → execute → review → final chain was hand-built orchestration standing in for subagents. Once v2.1.0 gave subagents back to DeepSeek, it can split work itself — Sutton\'s point, at a very small scale.'],
  ['A written lesson only counts when it\'s read. What preserves it is something that gets executed.','“--bare removes subagents” was observed on Nov 9, explained on Nov 12, written into two notes — and v2.0.0 still put it back into the script (Section 4). v2.1.0 keeps the reason as a code comment right above that line.']];
-const ol=$('#lessons');LS.forEach(([a,b],i)=>{const li=document.createElement('li');li.innerHTML=`<b>${a}</b><div class="ev2">${b}</div>`;li.onclick=()=>li.classList.toggle('open');if(i===0)li.classList.add('open');ol.appendChild(li)});
+const LTAG=['Claim 1 · architecture gets in the way','Claim 2 · untested speculation','Claim 1 · architecture gets in the way','Claim 1 · architecture gets in the way','Claim 2 · untested speculation','Claim 1 · architecture gets in the way','Claim 2 · untested speculation'];
+const ol=$('#lessons');LS.forEach(([a,b],i)=>{const li=document.createElement('li');li.innerHTML=`<span class="cl">${LTAG[i]}</span><b>${a}</b><div class="ev2">${b}</div>`;li.onclick=()=>li.classList.toggle('open');if(i===0)li.classList.add('open');ol.appendChild(li)});
 
 /* ---------- theme ---------- */
 let theme=null;try{theme=localStorage.getItem('kbl-theme')}catch(e){}
