@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurt's Bitter Lesson</title>
+<meta name="description" content="Six rewrites of an AI coding-dispatch pipeline in one day, the measurements behind each, and what was left standing.">
+<meta property="og:title" content="Kurt's Bitter Lesson">
+<meta property="og:description" content="How a carefully engineered Claude → DeepSeek dispatch pipeline got cut back to one script and one rule — with data.">
+<style>
+:root{
+  --bg:#faf8f4; --paper:#ffffff; --ink:#1d1b18; --ink2:#5b5650; --ink3:#8d877f;
+  --line:#e6e1d8; --accent:#b4532a; --accent-soft:#f6e7de;
+  --c1:#2f6fb0; --c2:#c4682f; --c3:#3f8f5a; --c4:#8a5cb0; --bad:#b83a3a; --ok:#2f8a55;
+  --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+  --serif:"Source Serif Pro","Iowan Old Style",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151a; --paper:#1e1d23; --ink:#ece8e1; --ink2:#b3ada4; --ink3:#7f7a73;
+    --line:#33313a; --accent:#e58a5c; --accent-soft:#3a2a22;
+    --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16151a; --paper:#1e1d23; --ink:#ece8e1; --ink2:#b3ada4; --ink3:#7f7a73;
+  --line:#33313a; --accent:#e58a5c; --accent-soft:#3a2a22;
+  --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 var(--sans)}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px 80px}
+header.hero{padding:72px 0 28px;border-bottom:1px solid var(--line)}
+.kicker{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(38px,7.5vw,64px)/1.05 var(--serif);margin:14px 0 14px;letter-spacing:-.015em}
+.sub{color:var(--ink2);font-size:19px;margin:0}
+.meta{color:var(--ink3);font-size:13px;margin-top:18px}
+h2{font:700 27px/1.3 var(--serif);margin:56px 0 8px}
+h2 .n{color:var(--accent);margin-right:10px}
+h3{font:600 18px/1.4 var(--sans);margin:30px 0 6px}
+p{margin:10px 0}
+code{font:14px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+.abstract{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:18px 22px;border-radius:8px;margin:28px 0}
+.abstract b{color:var(--accent)}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+nav.toc a{font-size:13px;color:var(--ink2);text-decoration:none;border:1px solid var(--line);padding:4px 10px;border-radius:999px;background:var(--paper)}
+nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
+.fig{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 18px 12px;margin:22px 0}
+.fig .cap{font-size:13.5px;color:var(--ink2);margin-top:8px}
+.fig .cap b{color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+button.tab{font:500 13px var(--sans);border:1px solid var(--line);background:transparent;color:var(--ink2);padding:5px 12px;border-radius:6px;cursor:pointer}
+button.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--ink2);font:12px var(--sans)}
+svg .axis{stroke:var(--line)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.5;padding:7px 10px;border-radius:6px;max-width:280px;opacity:0;transition:opacity .12s;z-index:9}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink2);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
+.scroll{overflow-x:auto}
+.pass{color:var(--ok);font-weight:600}.fail{color:var(--bad);font-weight:600}
+.vt{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px}
+.vt button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 4px;cursor:pointer;font:600 14px var(--sans)}
+.vt button small{display:block;font-weight:400;color:var(--ink3);font-size:11px}
+.vt button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.vcard{border-top:1px dashed var(--line);padding-top:12px}
+.vcard h4{margin:0 0 4px;font:600 16px var(--sans)}
+.vcard .tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:2px}
+.tag.dead{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.tag.live{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.vcard ul{margin:6px 0 0 0;padding-left:20px}
+.ft{position:relative;margin:8px 0 0;padding-left:26px}
+.ft:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.ft .ev{position:relative;margin:0 0 16px}
+.ft .ev:before{content:"";position:absolute;left:-23px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:2px solid var(--c1)}
+.ft .ev.bad:before{border-color:var(--bad);background:var(--bad)}
+.ft .ev.ok:before{border-color:var(--ok);background:var(--ok)}
+.ft .d{font:600 12px var(--mono);color:var(--ink3)}
+.lessons{counter-reset:l;list-style:none;padding:0}
+.lessons li{counter-increment:l;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px 14px 56px;margin:10px 0;position:relative;cursor:pointer}
+.lessons li:before{content:counter(l);position:absolute;left:16px;top:12px;font:700 22px var(--serif);color:var(--accent)}
+.lessons li .ev2{display:none;color:var(--ink2);font-size:14.5px;margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
+.lessons li.open .ev2{display:block}
+.lessons li b{display:block}
+.quote{font:italic 22px/1.5 var(--serif);border-left:3px solid var(--accent);padding:6px 0 6px 18px;margin:26px 0;color:var(--ink)}
+.themebtn,.langbtn{position:fixed;top:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;z-index:5;text-decoration:none;font-family:var(--sans)}
+.themebtn{right:12px}.langbtn{right:100px}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink3);font-size:13px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:4px 0 6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){.vt{grid-template-columns:repeat(3,1fr)} .lessons li{padding-left:46px} .lessons li:before{left:12px}}
+</style>
+</head>
+<body>
+<button class="themebtn" id="themebtn" aria-label="Toggle light/dark">◐ Theme</button><a class="langbtn" href="zh.html">中文</a>
+<div class="tip" id="tip"></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">A personal field report · November 2026</div>
+  <h1>Kurt's Bitter Lesson</h1>
+  <p class="sub">One person, two model vendors, six versions of a dispatch rule — and how a carefully engineered pipeline got cut back to one script and one sentence: <i>if DeepSeek can do it, give it to DeepSeek.</i></p>
+  <div class="meta">Kurt × Claude (Opus / Haiku) × DeepSeek (Flash / Pro) · data as of 2026-11-12</div>
+  <nav class="toc">
+    <a href="#abs">Abstract</a><a href="#bg">1 Background</a><a href="#iter">2 Six iterations</a><a href="#exp">3 Experiments</a><a href="#forgot">4 Forgotten three times</a><a href="#concl">5 The lesson</a><a href="#limit">6 Limitations</a><a href="#appx">Appendix</a>
+  </nav>
+</header>
+
+<section id="abs" class="abstract">
+  <p><b>Abstract.</b> The goal was simple: make the expensive model (Claude Opus) do less and the cheap one (DeepSeek) do more. Within a single day the dispatch rule, a Claude Code skill called <code>delegate-coding</code>, went from v0.3 to v2.1. Along the way it gained quota-based tier switching, code summarizers, spec writers, first-pass reviews, final reviews, gates, a ledger, sandbox copies and multi-round rework — and then lost almost all of them. The measurements say: <b>every extra machine check adds another place where checks contradict each other</b>. Only three things earned their keep: give the executor its full toolset, impose one hard turn limit, and have a strong model do one independent review. The final version is <b>14%</b> of the peak code size, and it finished on the first try the task that deadlocked v1.0. Also: one key fact (<code>--bare</code> makes subagents disappear) was written down twice and still got re-learned a third time.</p>
+</section>
+
+<section id="bg">
+<h2><span class="n">1</span>Background: a plain question</h2>
+<p>Kurt does engineering work in the Claude Code desktop app. Opus is excellent but quota-limited. DeepSeek exposes an Anthropic-compatible API, so the very same Claude Code CLI can be driven by DeepSeek at almost no cost to the Claude quota. The question becomes: <b>which work should the Claude in the main chat hand to DeepSeek, how should it hand it over, and how should the result be checked?</b></p>
+<p>The answer lives in a skill file (<code>delegate-coding/SKILL.md</code>) that must be loaded at the start of every engineering conversation. This report follows six major rewrites of that file and the measurements behind each one.</p>
+</section>
+
+<section id="iter">
+<h2><span class="n">2</span>Six iterations</h2>
+<p>Click a version to see what it did and how it died.</p>
+<div class="fig">
+  <div class="vt" id="vt"></div>
+  <div class="vcard" id="vcard"></div>
+</div>
+
+<h3>Complexity went up, then came down</h3>
+<div class="fig">
+  <div class="controls" id="cxCtl"></div>
+  <div id="cxChart"></div>
+  <div class="cap"><b>Figure 1.</b> File count and total bytes of the skill directory per version, measured from the archived copies and the live directory. Only SKILL.md was archived for v0.4.1, so its real size was larger; v0.3 has no archive and is not shown. v1.0.0 also shipped 30 unit tests, all green — and then failed on its first real run.</div>
+</div>
+</section>
+
+<section id="exp">
+<h2><span class="n">3</span>Experiments</h2>
+<p>Every number comes from that day's logs, ledgers and data tables. Nothing is estimated; values marked “~” were already approximate in the raw records.</p>
+
+<h3>3.1 T0–T3: can the machinery be built at all?</h3>
+<div class="fig scroll">
+<table>
+<tr><th>Test</th><th>Question</th><th>Result</th><th>Key evidence</th></tr>
+<tr><td>T0</td><td>Can DeepSeek spawn subagents without <code>--bare</code>?</td><td class="pass">Pass</td><td>Main process issued an Agent call; subagent messages carry <code>parent_tool_use_id</code>; call ids are DeepSeek-style</td></tr>
+<tr><td>T1</td><td>A PreToolUse hook as a router</td><td class="pass">Pass</td><td>Main-process Write blocked with exit code 2; subagent allowed through</td></tr>
+<tr><td>T2</td><td>Ledger + completion gate</td><td class="pass">Pass</td><td>Failed acceptance → <code>status=failed</code>, script exit code 1</td></tr>
+<tr><td>T3</td><td>SubagentStop push-back</td><td class="pass">Pass</td><td>Blocked once; the subagent wrote the missing file itself; allowed the second time</td></tr>
+</table>
+<div class="cap"><b>Table 1.</b> All four passed. Every mechanism was technically feasible — which is exactly what encouraged us to keep stacking them.</div>
+</div>
+
+<h3>3.2 T4: who should write the spec?</h3>
+<p>Same task (finalization logic in a task queue). Route A: DeepSeek Pro writes the spec. Route B: Opus writes the spec. In both routes Flash executes and does first-pass review, and Opus does the final review. Five hidden acceptance tests were written separately.</p>
+<div class="fig">
+  <div class="controls" id="t4Ctl"></div>
+  <div class="legend" id="t4Leg"></div>
+  <div id="t4Chart"></div>
+  <div class="cap"><b>Figure 2.</b> Time or DeepSeek cost per step (hover for details). Opus steps are billed in tokens and are not on the dollar chart. <b>Both routes were sent back for rework by the Opus final review</b>, while the hidden acceptance tests scored 5/5 on every version — the tests were green; the reviewer found the problems.</div>
+</div>
+<div class="fig scroll">
+<table>
+<tr><th>Totals</th><th>A: Pro writes spec</th><th>B: Opus writes spec</th></tr>
+<tr><td>Rework rounds</td><td>2</td><td>1</td></tr>
+<tr><td>DeepSeek time</td><td>1,118 s</td><td>689 s</td></tr>
+<tr><td>DeepSeek cost</td><td>$2.89</td><td>$1.43</td></tr>
+<tr><td>Opus output tokens</td><td>3,400</td><td>11,250</td></tr>
+<tr><td>Final tests</td><td>153 OK</td><td>149 OK</td></tr>
+<tr><td>Diff size</td><td>+572 / −26</td><td>+381 / −24</td></tr>
+</table>
+<div class="cap"><b>Table 2.</b> Takeaway: who writes the spec matters less than you'd think; <b>the final review is the layer that actually catches things</b>. Caveat: one task only.</div>
+</div>
+
+<h3>3.3 T5: Flash or Pro?</h3>
+<div class="fig">
+  <div class="legend"><span><i style="background:var(--c1)"></i>Flash</span><span><i style="background:var(--c2)"></i>Pro</span><span><i style="background:var(--bad)"></i>Scaffold false alarm (not the model)</span></div>
+  <div id="t5Chart"></div>
+  <div class="cap"><b>Figure 3.</b> 3 tasks × 2 models × 2 runs = 12 real runs (durations from ledger timestamps). The acceptance command produced <b>zero false rejections</b>; the single failure came from the gate configuration and passed on rerun. Flash averaged <b>19 s</b>, Pro <b>55 s</b>; every run passed.</div>
+</div>
+
+<h3>3.4 T6: DeepSeek doesn't know when to stop</h3>
+<p>An Opus subagent and DeepSeek Flash each “grilled” Kurt about the same requirements document until they had a final design.</p>
+<div class="fig">
+  <div id="t6Chart"></div>
+  <div class="cap"><b>Figure 4.</b> Each row is normalized to the larger value. DeepSeek read “ask at most 4 questions” as “always ask 4”, was still asking in round 6 (it only finalized after the 4 questions in round 5 were dismissed by an accidental click), and invented a rule Kurt never confirmed. <b>The design quality was never scored</b>, so this shows only one thing: <b>stopping can't be left to the executor's judgment</b>.</div>
+</div>
+
+<h3>3.5 v1.0.0's first real job</h3>
+<div class="fig">
+  <div id="v1Chart"></div>
+  <div class="cap"><b>Figure 5.</b> A tiny task: add a <code>sub</code> function. Under v1.0.0 the card-writing Flash copied a test command that needs <code>tests/__init__.py</code>, while the same card said “do not add <code>__init__.py</code>”. Round 1 failed acceptance; round 2 added the file and passed acceptance, but the gate flagged it as out of scope; round 3 stalled and was killed by hand. v2.0.0 (no gate, no acceptance command, no rounds) did the same task in <b>7 turns, 11 seconds</b>.</div>
+</div>
+
+<h3>3.6 v2.1.0: getting subagents back (today)</h3>
+<p>Same read-only smoke task each time: “Use a subagent to read AGENTS.md and return its first line, then try to write a file (should be refused).” Click through the attempts.</p>
+<div class="fig">
+  <div class="controls" id="smCtl"></div>
+  <div id="smChart"></div>
+  <div class="cap" id="smCap"></div>
+</div>
+</section>
+
+<section id="forgot">
+<h2><span class="n">4</span>Forgotten three times</h2>
+<p>If you remember one part of this report, make it this timeline rather than any chart.</p>
+<div class="fig">
+<div class="ft">
+  <div class="ev"><div class="d">Nov 9 · probe</div>Seven tools explicitly allowed (Agent included); DeepSeek could see only three: Bash, Edit, Read. The report noted “sees 3 of 7” and <b>never explained it</b>.</div>
+  <div class="ev ok"><div class="d">Nov 12, morning · T0</div>Root cause found: <code>--bare</code> mode exposes only three tools, and it also passes <code>CLAUDE_CODE_SIMPLE=1</code> down to child processes. Without <code>--bare</code>, subagents spawn and genuinely run on DeepSeek. Written into two separate notes.</div>
+  <div class="ev bad"><div class="d">Nov 12, midday · v2.0.0</div>During the big simplification, the new script put <code>--bare</code> right back, and SKILL.md dutifully recorded “cannot spawn subagents” — turning a fixable limitation into an accepted fact. One of the notes even said “keep using --bare for normal tasks”.</div>
+  <div class="ev bad"><div class="d">Nov 12, afternoon · v2.1.0 attempts 1–2</div>Kurt asked: “why still no subagents?” First, Agent was added to the allow list — no effect. Then the tools were listed explicitly with <code>--tools</code> — still nothing; even Glob and Grep went missing.</div>
+  <div class="ev ok"><div class="d">Nov 12, afternoon · v2.1.0</div>Dropped <code>--bare</code>; isolation now comes from a dedicated config directory plus <code>--strict-mcp-config</code>. Subagents work. Along the way we found that “read-only” mode couldn't actually stop writes (acceptEdits auto-approves them) and fixed that too.</div>
+</div>
+</div>
+<p>The answer was already in T0, and it had been written down twice. But the conversation that produced v2.0.0 never read those notes; the new script was edited from the old one, and the old one carried <code>--bare</code>. <b>A written lesson only counts when someone reads it. What actually preserves it is putting it inside something that gets executed</b> — so v2.1.0 records the reason as a code comment directly above that line.</p>
+</section>
+
+<section id="concl">
+<h2><span class="n">5</span>The lesson</h2>
+<div class="quote">Hand-built process machinery layered on top of AI agents loses, in the long run, to: the full toolset, one hard limit, and one independent review by a strong model.</div>
+<p>Rich Sutton's <i>The Bitter Lesson</i> argues that general methods which leverage computation eventually beat methods that encode human knowledge by hand. We walked through a miniature version of that in a single day. Click each point to see the evidence.</p>
+<ol class="lessons" id="lessons"></ol>
+</section>
+
+<section id="limit">
+<h2><span class="n">6</span>Limitations</h2>
+<ul>
+<li>Tiny samples: T4 is one task, T5 is three tasks × two runs, T6 was never scored. Any claim like “Flash beats Pro” or “an Opus spec is cheaper” is provisional.</li>
+<li>Everything ran on one Windows machine, on one day, for one person. Concurrency, long tasks and timeout watchdogs were never tested.</li>
+<li>Claude quota is reported only as whole percentages, so the cost of a single Opus call is invisible; there is no reliable “Claude quota saved” number.</li>
+<li>The gate's real-world catch rate and false-alarm rate were never measured — it was deleted before anyone got to it.</li>
+<li>Without <code>--bare</code>, DeepSeek now reads the project's own CLAUDE.md / AGENTS.md. We treat that as a feature, but its long-term effect hasn't been observed.</li>
+</ul>
+</section>
+
+<section id="appx">
+<h2><span class="n">Appendix</span> The current rule (v2.1.0)</h2>
+<div class="fig scroll">
+<table>
+<tr><th>Situation</th><th>What happens</th></tr>
+<tr><td>Main chat runs Opus (“stable” tier)</td><td>If DeepSeek can do it, give it to DeepSeek. Opus keeps only one- or two-step chores, work that needs MCP / browser / artifacts, and design decisions that need back-and-forth with Kurt. Opus reviews DeepSeek's diff and test output.</td></tr>
+<tr><td>Main chat runs Haiku (“economy” tier)</td><td>Chat only. Engineering requests are copied verbatim into a task file, dispatched with one command, and the reply is relayed unchanged.</td></tr>
+<tr><td>Dispatch script</td><td>One PowerShell script: strips inherited Claude environment variables, points the CLI at DeepSeek, uses its own config directory, caps at 80 turns, prints the final reply.</td></tr>
+<tr><td>Permissions</td><td><i>dev</i>: all base tools + subagents; network, push, recursive delete etc. denied. <i>strict</i>: read-only + subagents, Edit/Write explicitly denied.</td></tr>
+<tr><td>Stopping</td><td>Only <code>--max-turns</code>. Never “the model says it's done”.</td></tr>
+</table>
+</div>
+<p style="color:var(--ink3);font-size:13.5px">Removed along the way: quota-based tier switching, Flash code summaries, spec writers, Flash first-pass review, short-lived Opus supervisors, gates (GATE-ACCEPT / GATE-ALLOW), the ledger, sandbox copies, multi-round rework, card-writing step, templates, 30 unit tests, and the Haiku relay layer.</p>
+</section>
+
+<footer>
+Kurt's Bitter Lesson · 2026-11-12 · Sources: the retrospective notes, the T4 data table, the T5 ledger, T0–T3 and T6 test records, and the day's smoke-test output. Single file, no external dependencies. · <a href="zh.html" style="color:inherit">中文版</a>
+</footer>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const css=v=>`var(${v})`; // live CSS var, so charts follow the theme without redrawing
+const _sa=SVGElement.prototype.setAttribute;
+SVGElement.prototype.setAttribute=function(k,v){if((k==='fill'||k==='stroke')&&String(v).startsWith('var(')){this.style[k]=v;return}return _sa.call(this,k,v)};
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const x=Math.min(e.clientX+14,innerWidth-290);tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.style.opacity=0}
+function el(tag,attrs,parent){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
+function svg(w,h){return el('svg',{viewBox:`0 0 ${w} ${h}`,role:'img'})}
+function hover(node,html){node.addEventListener('mousemove',e=>showTip(e,html));node.addEventListener('mouseleave',hideTip);node.addEventListener('touchstart',e=>showTip(e.touches[0],html),{passive:true})}
+function txt(s,attrs,str){const t=el('text',attrs,s);t.textContent=str;return t}
+function tabs(ctl,items,onPick,init){ctl.innerHTML='';items.forEach((it,i)=>{const b=document.createElement('button');b.className='tab';b.textContent=it.label;b.setAttribute('aria-pressed',i===init);b.onclick=()=>{[...ctl.children].forEach(c=>c.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');onPick(it,i)};ctl.appendChild(b)});onPick(items[init],init)}
+document.addEventListener('touchstart',e=>{if(!e.target.closest('svg'))hideTip()},{passive:true});
+
+/* ---------- versions ---------- */
+const V=[
+ {v:'0.3',d:'and earlier',title:'Haiku main chat + a three-mode table',dead:true,
+  what:['Main chat fixed to Haiku: talk, hand off, summarize, light checks','Switch normal / economy at 60% quota; plus a manual “full” mode','Checks = main chat reads git diff; prompt the user to upgrade to Opus when needed'],
+  why:'Modes and thresholds kept multiplying; the rules themselves became something to maintain.'},
+ {v:'0.4',d:'V2 pipeline',title:'Summary → spec → execute → first review → final review',dead:true,
+  what:['Economy tier at ≥80% (5-hour) or ≥70% (weekly) quota','Flash writes a code summary; Opus writes the spec from the summary only','Flash executes + Flash first review, Opus final review; a gate as the only completion check','At most one rework round, done in a sandbox copy (so no peeking at old answers)'],
+  why:'T4 showed the spec writer matters little and the final review matters most; the chain was long and re-read context every time.'},
+ {v:'0.5',d:'relay layer',title:'Haiku only relays; an Opus supervisor runs things',dead:true,
+  what:['Main chat compresses engineering requests and forwards them to a fresh Opus supervisor','13 files: pipeline, gate, sandbox script, six prompt templates'],
+  why:'Haiku could not tell whether Kurt was talking to it or wanted something forwarded. “Should I forward this?” is itself a judgment — and the rules forbade it from judging.'},
+ {v:'1.0',d:'tiers + gate',title:'Tier by main-chat model; the script enforces stopping',dead:true,
+  what:['Opus tier: do it yourself, write a card for Flash on big tasks','Haiku tier: one command writes the card, then executes','dispatch.ps1: card writing, gate, max 3 rounds; 30 unit tests, all green'],
+  why:'First real job: the acceptance command needed __init__.py, the card forbade it. Three rounds burned, killed by hand.'},
+ {v:'2.0',d:'the big cut',title:'One skill + one script',dead:true,
+  what:['Deleted the gate, acceptance commands, rework rounds, card writing, ledger, templates and all tests','The script just launches DeepSeek, caps at 80 turns, prints the reply','Review goes back to the main chat: Opus reads the diff'],
+  why:'Right direction — but the script still used --bare, so subagents vanished, and that got recorded as “a DeepSeek limitation”.'},
+ {v:'2.1',d:'current',title:'If DeepSeek can do it, give it to DeepSeek',dead:false,
+  what:['Stable tier changed from “dispatch big tasks” to “dispatch whatever you can”','Dropped --bare; isolate with a dedicated config dir + --strict-mcp-config','Agent tool allowed; read-only tier explicitly denies Edit/Write','Smoke tests: subagent works, read-only write refused, dev subagent writes a file'],
+  why:''}
+];
+const vt=$('#vt'),vc=$('#vcard');
+function showV(i){const x=V[i];[...vt.children].forEach((b,j)=>b.setAttribute('aria-pressed',i===j));
+ vc.innerHTML=`<h4>v${x.v} · ${x.title}<span class="tag ${x.dead?'dead':'live'}">${x.dead?'retired':'in use'}</span></h4><ul>${x.what.map(w=>`<li>${w}</li>`).join('')}</ul>${x.why?`<p style="margin-top:10px"><b>Cause of death: </b>${x.why}</p>`:''}`}
+V.forEach((x,i)=>{const b=document.createElement('button');b.innerHTML=`${x.v}<small>${x.d}</small>`;b.onclick=()=>showV(i);vt.appendChild(b)});
+showV(5);
+
+/* ---------- complexity ---------- */
+const CX=[{v:'0.4.1',files:1,bytes:7111,note:'Only SKILL.md was archived'},{v:'0.5.0',files:13,bytes:23552},{v:'1.0.0',files:13,bytes:65288,note:'Includes 30 unit tests'},{v:'2.0.0',files:3,bytes:8028},{v:'2.1.0',files:3,bytes:9247}];
+function drawCx(key){const W=640,H=250,L=56,B=34,T=14,R=10,s=svg(W,H);const box=$('#cxChart');box.innerHTML='';box.appendChild(s);
+ const max=Math.max(...CX.map(d=>d[key]))*1.12;const bw=(W-L-R)/CX.length;
+ for(let g=0;g<=4;g++){const y=T+(H-T-B)*g/4;el('line',{x1:L,x2:W-R,y1:y,y2:y,class:'axis'},s);const val=max*(1-g/4);txt(s,{x:L-8,y:y+4,'text-anchor':'end'},key==='bytes'?(val/1000).toFixed(0)+'K':val.toFixed(0))}
+ CX.forEach((d,i)=>{const h=(H-T-B)*d[key]/max,x=L+i*bw+bw*.22,w=bw*.56,y=H-B-h;
+  const r=el('rect',{x,y,width:w,height:h,rx:4,fill:d.v==='2.1.0'?css('--accent'):(d.v==='1.0.0'?css('--bad'):css('--c1')),opacity:d.v==='0.4.1'?.45:1},s);
+  hover(r,`<b>v${d.v}</b><br>${d.files} files · ${d.bytes.toLocaleString('en')} bytes${d.note?'<br>'+d.note:''}`);
+  txt(s,{x:x+w/2,y:H-B+18,'text-anchor':'middle'},d.v);
+  txt(s,{x:x+w/2,y:y-6,'text-anchor':'middle'},key==='bytes'?(d.bytes/1000).toFixed(1)+'K':d.files);});
+}
+tabs($('#cxCtl'),[{label:'Total bytes',k:'bytes'},{label:'File count',k:'files'}],it=>drawCx(it.k),0);
+
+/* ---------- T4 ---------- */
+const T4=[
+ {r:'A',s:'A1 spec',who:'Pro',sec:374,usd:1.322,res:'120 lines, 2 coverage paths'},
+ {r:'A',s:'A2 execute',who:'Flash',sec:89,usd:.128,res:'Gate passed first time, 145 tests OK'},
+ {r:'A',s:'A3 review',who:'Flash',sec:96,usd:.195,res:'Conditional pass (1 high, 2 medium)'},
+ {r:'A',s:'A4 final',who:'Opus',sec:39,usd:null,rework:true,res:'Rework: publish-before-cleanup (inherited from spec)'},
+ {r:'A',s:'A6 rework',who:'Flash',sec:163,usd:.334,res:'150 tests OK'},
+ {r:'A',s:'A7 review',who:'Flash',sec:107,usd:.25,res:'_finalizing races remove_task → zombie task'},
+ {r:'A',s:'A8 fix',who:'Flash',sec:178,usd:.412,res:'153 tests OK'},
+ {r:'A',s:'A8 review',who:'Flash',sec:111,usd:.252,res:'Conditional pass, 2 medium issues left'},
+ {r:'B',s:'B1 summary',who:'Flash',sec:219,usd:.469,res:'194 lines'},
+ {r:'B',s:'B2 spec',who:'Opus',sec:94,usd:null,res:'121 lines, 5 coverage paths'},
+ {r:'B',s:'B3 execute',who:'Flash',sec:136,usd:.232,res:'147 tests OK'},
+ {r:'B',s:'B4 review',who:'Flash',sec:124,usd:.261,res:'Conditional pass (4 medium)'},
+ {r:'B',s:'B5 final',who:'Opus',sec:25,usd:null,rework:true,res:'Rework: _failing leak, missing try/finally'},
+ {r:'B',s:'B6 rework',who:'Flash',sec:95,usd:.205,res:'149 tests OK'},
+ {r:'B',s:'B review',who:'Flash',sec:115,usd:.263,res:'Cleanup exception swallows the failure outcome (med-high)'}];
+const whoC={Pro:'--c2',Flash:'--c1',Opus:'--c4'};
+$('#t4Leg').innerHTML=['Flash','Pro','Opus'].map(w=>`<span><i style="background:var(${whoC[w]})"></i>${w}</span>`).join('')+'<span>⟲ = sent back by final review</span>';
+function drawT4(key){const box=$('#t4Chart');box.innerHTML='';const rowH=22,L=84,R=60,W=640,H=T4.length*rowH+34,s=svg(W,H);box.appendChild(s);
+ const max=Math.max(...T4.map(d=>d[key]||0));
+ T4.forEach((d,i)=>{const y=10+i*rowH+(d.r==='B'?12:0);const v=d[key];
+  txt(s,{x:L-8,y:y+14,'text-anchor':'end'},d.s);
+  if(v==null){const n=txt(s,{x:L+4,y:y+14},'(billed in tokens)'+(d.rework?'  ⟲':''));n.setAttribute('opacity',.65);return}
+  const w=(W-L-R)*v/max;const r=el('rect',{x:L,y:y+3,width:Math.max(w,2),height:rowH-8,rx:3,fill:css(whoC[d.who])},s);
+  hover(r,`<b>${d.s}</b> · ${d.who}<br>${d.sec} s${d.usd!=null?' · $'+d.usd.toFixed(3):''}<br>${d.res}`);
+  txt(s,{x:L+w+6,y:y+14},(key==='sec'?v+'s':'$'+v.toFixed(2))+(d.rework?' ⟲':''));});
+ el('line',{x1:0,x2:W,y1:10+8*rowH+6,y2:10+8*rowH+6,class:'axis','stroke-dasharray':'3 3'},s);
+}
+tabs($('#t4Ctl'),[{label:'Time (s)',k:'sec'},{label:'DeepSeek cost ($)',k:'usd'}],it=>drawT4(it.k),0);
+
+/* ---------- T5 ---------- */
+const T5=[['A','Flash',1,15.3],['A','Pro',1,31.9],['B','Flash',1,20.3],['B','Pro',1,76.5],['C','Flash',1,25.5],['C','Pro',1,49.9],
+ ['A','Flash',2,14.6],['A','Pro',2,33.9],['B','Flash',2,18.0],['B','Pro',2,46.2],['C','Flash',2,21.8],['C','Pro',2,94.5]];
+(function(){const W=640,H=200,L=52,R=20,T=12,B=34,s=svg(W,H);$('#t5Chart').appendChild(s);const max=100;
+ const X=v=>L+(W-L-R)*v/max;const rows=['A','B','C'];const rh=(H-T-B)/3;
+ for(let g=0;g<=5;g++){const x=X(g*20);el('line',{x1:x,x2:x,y1:T,y2:H-B,class:'axis'},s);txt(s,{x,y:H-B+16,'text-anchor':'middle'},g*20+'s')}
+ rows.forEach((r,i)=>txt(s,{x:L-12,y:T+rh*i+rh/2+4,'text-anchor':'end'},'Task '+r));
+ const f=el('circle',{cx:X(15.1),cy:T+rh/2-9,r:6,fill:'none',stroke:css('--bad'),'stroke-width':2},s);hover(f,'<b>Task A · Flash · first attempt</b><br>15.1 s · acceptance exit code 1<br>Caused by gate config, not the model; passed on rerun');
+ T5.forEach(([r,m,k,v])=>{const i=rows.indexOf(r);
+  const c=el('circle',{cx:X(v),cy:T+rh*i+rh/2+(m==='Pro'?7:-1),r:6,fill:css(m==='Pro'?'--c2':'--c1'),opacity:.9},s);
+  hover(c,`<b>Task ${r} · ${m} · run ${k}</b><br>${v} s · passed`)});
+ [['Flash',19.25,'--c1'],['Pro',55.48,'--c2']].forEach(([m,v,c])=>{const x=X(v);el('line',{x1:x,x2:x,y1:T,y2:H-B,stroke:css(c),'stroke-dasharray':'4 3','stroke-width':1.5},s);const t=txt(s,{x:x+4,y:T+10},m+' mean '+v.toFixed(0)+'s');t.setAttribute('fill',css(c))});
+})();
+
+/* ---------- T6 ---------- */
+(function(){const M=[['Rounds',3,6,''],['Questions answered',7,16,''],['Time',46,143,' s'],['Final test items',9,13,'']];
+ const W=640,rh=46,H=M.length*rh+16,L=140,s=svg(W,H);$('#t6Chart').appendChild(s);const mid=L+(W-L)/2;
+ txt(s,{x:mid-8,y:10,'text-anchor':'end'},'Opus subagent').setAttribute('fill',css('--c4'));
+ txt(s,{x:mid+8,y:10},'DeepSeek Flash').setAttribute('fill',css('--c1'));
+ M.forEach(([k,o,d,u],i)=>{const y=22+i*rh,mx=Math.max(o,d),half=(W-L)/2-50;
+  txt(s,{x:0,y:y+17},k);
+  const wo=half*o/mx,wd=half*d/mx;
+  hover(el('rect',{x:mid-wo,y,width:wo,height:24,rx:3,fill:css('--c4')},s),`Opus: ${o}${u}`);
+  hover(el('rect',{x:mid,y,width:wd,height:24,rx:3,fill:css('--c1')},s),`DeepSeek: ${d}${u}`);
+  txt(s,{x:mid-wo-6,y:y+17,'text-anchor':'end'},o);
+  txt(s,{x:mid+wd+6,y:y+17},d);});
+})();
+
+/* ---------- v1 vs v2 ---------- */
+(function(){const W=640,H=150,L=70,s=svg(W,H);$('#v1Chart').appendChild(s);
+ const steps1=[['Round 1','Failed: no __init__.py'],['Round 2','Passed, gate: out of scope'],['Round 3','Stalled, killed by hand']];
+ txt(s,{x:0,y:40},'v1.0.0');txt(s,{x:0,y:112},'v2.0.0');
+ const bw=(W-L)/3-8;steps1.forEach(([a,b],i)=>{const x=L+i*(bw+8);const r=el('rect',{x,y:18,width:bw,height:36,rx:6,fill:css('--paper'),stroke:css('--bad'),'stroke-width':1.5},s);hover(r,`<b>${a}</b><br>${b}`);
+  txt(s,{x:x+10,y:34},a);txt(s,{x:x+10,y:48},b).setAttribute('opacity',.8)});
+ el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:css('--ok'),opacity:.16},s);const r=el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:'none',stroke:css('--ok'),'stroke-width':1.5},s);
+ txt(s,{x:L+10,y:106},'Once');txt(s,{x:L+10,y:120},'7 turns · 11 s · tests OK');
+ hover(r,'<b>v2.0.0</b><br>No gate, no acceptance command — just did the task');
+})();
+
+/* ---------- smoke steps ---------- */
+const SM=[
+ {label:'v2.0.0 as-is',tools:['Bash','Read','Edit'],agent:false,write:'—',turns:2,secs:3,cap:'A small read-only task works (2 turns, 3 s), but subagents had not been tested yet.'},
+ {label:'+ allow Agent',tools:['Bash','Read','Edit'],agent:false,write:'no Write tool',turns:3,secs:6,cap:'Only adding Agent to the allow list: DeepSeek reports “this session provides no Agent or Write tool”. The allow list governs permission, not whether a tool exists.'},
+ {label:'+ --tools',tools:['Bash','Read'],agent:false,write:'no Write tool',turns:4,secs:7,cap:'Listing every tool explicitly with --tools: down to Bash and Read — fewer than before. Under --bare this flag does nothing useful.'},
+ {label:'drop --bare (strict)',tools:['Read','Glob','Grep','Agent','Bash'],agent:true,write:'refused ✓',turns:4,secs:8,cap:'Without --bare, isolated by a dedicated config dir and --strict-mcp-config: the subagent returns “## Hub”, the write is refused, no file appears.'},
+ {label:'drop --bare (dev)',tools:['Read','Edit','Write','Glob','Grep','NotebookEdit','TodoWrite','Agent','Bash'],agent:true,write:'subagent wrote it ✓',turns:3,secs:15,cap:'Normal mode: the subagent creates hello.txt with content “ok”; the main process reads it back.'}];
+const ALL=['Read','Edit','Write','Glob','Grep','NotebookEdit','TodoWrite','Agent','Bash'];
+function drawSm(x){const box=$('#smChart');box.innerHTML='';const W=640,H=120,s=svg(W,H);box.appendChild(s);const cw=W/ALL.length;
+ ALL.forEach((t,i)=>{const on=x.tools.includes(t);const cx=i*cw+4;const r=el('rect',{x:cx,y:10,width:cw-8,height:40,rx:6,fill:on?css(t==='Agent'?'--accent':'--c3'):'none',stroke:on?'none':css('--line'),'stroke-width':1.5,opacity:on?.9:1},s);
+  hover(r,`${t}: ${on?'available':'not available'}`);const tx=txt(s,{x:cx+(cw-8)/2,y:34,'text-anchor':'middle'},t==='NotebookEdit'?'Notebook':t);if(on)tx.setAttribute('fill',css('--bg'));});
+ [`Subagent: ${x.agent?'works ✓':'unavailable ✗'}`,`Write: ${x.write}`,`${x.turns} turns · ${x.secs} s`].forEach((f,i)=>{const t=txt(s,{x:4+i*(W/3),y:84,style:'font-size:14px'},f);if(i===0)t.setAttribute('fill',css(x.agent?'--ok':'--bad'))});
+ $('#smCap').innerHTML='<b>Figure 6.</b> '+x.cap;}
+tabs($('#smCtl'),SM.map((x,i)=>({label:(i+1)+'. '+x.label,x})),it=>drawSm(it.x),0);
+
+/* ---------- lessons ---------- */
+const LS=[
+ ['Every extra machine check adds another place where checks contradict each other.','In v1.0.0 the acceptance command required __init__.py and the allow list forbade it. Whatever the executor did, one of them failed it, until all three rounds were gone (Figure 5). And the one writing those check configs was the weakest model in the chain.'],
+ ['Put stopping in the script, not in the model\'s judgment.','In T6 DeepSeek read “at most 4” as “exactly 4” and was still asking in round 6 (Figure 4). A single --max-turns fixed it — no need for rounds, gates and rework.'],
+ ['Green tests aren\'t correctness. The most valuable thing is one independent review by a strong model.','In T4 both routes scored 5/5 on hidden tests, yet both were sent back by the Opus final review (Figure 2). That is why the only check left in the current rule is “Opus reads the diff and the test output”.'],
+ ['Don\'t make a weak model your router.','v0.5.0 asked Haiku to decide “answer this myself, or forward it to Opus?” It couldn\'t. Deciding whether to forward is itself a judgment — and the rules forbade it from judging.'],
+ ['Run one real job before adding machinery.','v1.0.0\'s 30 unit tests (against a fake claude) all passed; the first real job failed. The tests verified the mechanism, not whether the mechanism helped on real work.'],
+ ['Giving the executor its full toolset beats orchestrating for it.','The whole summary → spec → execute → review → final chain was hand-built orchestration standing in for subagents. Once v2.1.0 gave subagents back to DeepSeek, it can split work itself — Sutton\'s point, at a very small scale.'],
+ ['A written lesson only counts when it\'s read. What preserves it is something that gets executed.','“--bare removes subagents” was observed on Nov 9, explained on Nov 12, written into two notes — and v2.0.0 still put it back into the script (Section 4). v2.1.0 keeps the reason as a code comment right above that line.']];
+const ol=$('#lessons');LS.forEach(([a,b],i)=>{const li=document.createElement('li');li.innerHTML=`<b>${a}</b><div class="ev2">${b}</div>`;li.onclick=()=>li.classList.toggle('open');if(i===0)li.classList.add('open');ol.appendChild(li)});
+
+/* ---------- theme ---------- */
+let theme=null;try{theme=localStorage.getItem('kbl-theme')}catch(e){}
+if(theme)document.documentElement.setAttribute('data-theme',theme);
+$('#themebtn').onclick=()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=cur==='dark'||(!cur&&matchMedia('(prefers-color-scheme: dark)').matches);
+ const nt=dark?'light':'dark';document.documentElement.setAttribute('data-theme',nt);try{localStorage.setItem('kbl-theme',nt)}catch(e){}};
+})();
+</script>
+</body>
+</html>

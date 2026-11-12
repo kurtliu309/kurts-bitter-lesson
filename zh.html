@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurt's Bitter Lesson</title>
+<meta name="description" content="一个人用 Claude 和 DeepSeek 搭派发流水线的六轮迭代、实测数据和结论。">
+<style>
+:root{
+  --bg:#faf8f4; --paper:#ffffff; --ink:#1d1b18; --ink2:#5b5650; --ink3:#8d877f;
+  --line:#e6e1d8; --accent:#b4532a; --accent-soft:#f6e7de;
+  --c1:#2f6fb0; --c2:#c4682f; --c3:#3f8f5a; --c4:#8a5cb0; --bad:#b83a3a; --ok:#2f8a55;
+  --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+  --serif:"Source Serif Pro","Noto Serif SC","Songti SC",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16151a; --paper:#1e1d23; --ink:#ece8e1; --ink2:#b3ada4; --ink3:#7f7a73;
+    --line:#33313a; --accent:#e58a5c; --accent-soft:#3a2a22;
+    --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16151a; --paper:#1e1d23; --ink:#ece8e1; --ink2:#b3ada4; --ink3:#7f7a73;
+  --line:#33313a; --accent:#e58a5c; --accent-soft:#3a2a22;
+  --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans)}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px 80px}
+header.hero{padding:72px 0 28px;border-bottom:1px solid var(--line)}
+.kicker{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(36px,7vw,60px)/1.05 var(--serif);margin:14px 0 14px;letter-spacing:-.01em}
+.sub{color:var(--ink2);font-size:18px;margin:0}
+.meta{color:var(--ink3);font-size:13px;margin-top:18px}
+h2{font:700 26px/1.3 var(--serif);margin:56px 0 8px}
+h2 .n{color:var(--accent);margin-right:10px}
+h3{font:600 18px/1.4 var(--sans);margin:30px 0 6px}
+p{margin:10px 0}
+code{font:13.5px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+.abstract{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:18px 22px;border-radius:8px;margin:28px 0}
+.abstract b{color:var(--accent)}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+nav.toc a{font-size:13px;color:var(--ink2);text-decoration:none;border:1px solid var(--line);padding:4px 10px;border-radius:999px;background:var(--paper)}
+nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
+.fig{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 18px 12px;margin:22px 0}
+.fig .cap{font-size:13px;color:var(--ink2);margin-top:8px}
+.fig .cap b{color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+button.tab{font:500 13px var(--sans);border:1px solid var(--line);background:transparent;color:var(--ink2);padding:5px 12px;border-radius:6px;cursor:pointer}
+button.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--ink2);font:12px var(--sans)}
+svg .axis{stroke:var(--line)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.5;padding:7px 10px;border-radius:6px;max-width:280px;opacity:0;transition:opacity .12s;z-index:9}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink2);font-size:12.5px}
+.scroll{overflow-x:auto}
+.pass{color:var(--ok);font-weight:600}.fail{color:var(--bad);font-weight:600}
+/* version timeline */
+.vt{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px}
+.vt button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 4px;cursor:pointer;font:600 14px var(--sans)}
+.vt button small{display:block;font-weight:400;color:var(--ink3);font-size:11px}
+.vt button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.vcard{border-top:1px dashed var(--line);padding-top:12px}
+.vcard h4{margin:0 0 4px;font:600 16px var(--sans)}
+.vcard .tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:2px}
+.tag.dead{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.tag.live{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.vcard ul{margin:6px 0 0 0;padding-left:20px}
+/* forgotten lesson timeline */
+.ft{position:relative;margin:8px 0 0;padding-left:26px}
+.ft:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.ft .ev{position:relative;margin:0 0 16px}
+.ft .ev:before{content:"";position:absolute;left:-23px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:2px solid var(--c1)}
+.ft .ev.bad:before{border-color:var(--bad);background:var(--bad)}
+.ft .ev.ok:before{border-color:var(--ok);background:var(--ok)}
+.ft .d{font:600 12px var(--mono);color:var(--ink3)}
+/* lessons */
+.lessons{counter-reset:l;list-style:none;padding:0}
+.lessons li{counter-increment:l;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px 14px 56px;margin:10px 0;position:relative;cursor:pointer}
+.lessons li:before{content:counter(l);position:absolute;left:16px;top:12px;font:700 22px var(--serif);color:var(--accent)}
+.lessons li .ev2{display:none;color:var(--ink2);font-size:14px;margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
+.lessons li.open .ev2{display:block}
+.lessons li b{display:block}
+.quote{font:italic 21px/1.55 var(--serif);border-left:3px solid var(--accent);padding:6px 0 6px 18px;margin:26px 0;color:var(--ink)}
+.themebtn{position:fixed;top:12px;right:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;z-index:5}
+.langbtn{position:fixed;top:12px;right:92px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;text-decoration:none;z-index:5}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink3);font-size:13px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:4px 0 6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){.vt{grid-template-columns:repeat(3,1fr)} .lessons li{padding-left:46px} .lessons li:before{left:12px}}
+</style>
+</head>
+<body>
+<button class="themebtn" id="themebtn" aria-label="切换明暗">◐ 明暗</button><a class="langbtn" href="index.html">English</a>
+<div class="tip" id="tip"></div>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">一份个人实验报告 · 2026 年 11 月</div>
+  <h1>Kurt's Bitter Lesson</h1>
+  <p class="sub">一个人、两家模型、六版派发规则：我们怎样把一条精巧的流水线，砍回一个脚本加一句“能交出去就交出去”。</p>
+  <div class="meta">Kurt × Claude（Opus / Haiku）× DeepSeek（Flash / Pro）· 数据截止 2026-11-12</div>
+  <nav class="toc">
+    <a href="#abs">摘要</a><a href="#bg">1 背景</a><a href="#iter">2 六轮迭代</a><a href="#exp">3 实验</a><a href="#forgot">4 被忘了三次的事</a><a href="#concl">5 结论</a><a href="#limit">6 局限</a><a href="#appx">附录</a>
+  </nav>
+</header>
+
+<section id="abs" class="abstract">
+  <p><b>摘要。</b>我们想让贵的模型（Claude Opus）少干活、便宜的模型（DeepSeek）多干活。为此在一天之内把派发规则 <code>delegate-coding</code> 从 0.3 改到 2.1，先后加过额度切档、代码摘要、规格写手、初审、终审、闸门、账本、副本隔离、多轮返工，又几乎全部删掉。实测显示：<b>机器检查越多，检查之间互相打架的失败点越多</b>；真正有用的只有三样东西——给执行者完整的工具、一条硬性的轮数上限、一次由强模型做的独立检查。最终版本的代码量是峰值的 <b>14%</b>，而它第一次就把 1.0 卡死的那道题做完了。另外，有一条关键事实（<code>--bare</code> 会让子代理消失）我们写下来过两次，还是在第三次又踩了一遍。</p>
+</section>
+
+<section id="bg">
+<h2><span class="n">1</span>背景：一个很朴素的问题</h2>
+<p>Kurt 用 Claude Code 桌面版做工程。Opus 质量好但额度有限；DeepSeek 通过 Anthropic 兼容接口也能驱动同一个 Claude Code 命令行，几乎不占 Claude 额度。于是问题变成：<b>主对话里的 Claude 应该把哪些活交给 DeepSeek，怎么交，交完怎么验收？</b></p>
+<p>答案写在一个 skill 文件里（<code>delegate-coding/SKILL.md</code>），每次涉及工程的对话开始前必须加载。这篇报告记录这个文件的六次大改，以及支撑每次改动的实测。</p>
+</section>
+
+<section id="iter">
+<h2><span class="n">2</span>六轮迭代</h2>
+<p>点击版本号查看那一版的设计和它是怎么死的。</p>
+<div class="fig">
+  <div class="vt" id="vt"></div>
+  <div class="vcard" id="vcard"></div>
+</div>
+
+<h3>复杂度先涨后跌</h3>
+<div class="fig">
+  <div class="controls" id="cxCtl"></div>
+  <div id="cxChart"></div>
+  <div class="cap"><b>图 1</b> 各版本 skill 目录的文件数与总字节数（从归档 <code>.trash</code> 和现行目录实测）。0.4.1 的归档只保留了 SKILL.md，真实规模更大；0.3 无归档，未画。1.0.0 另有 30 条单元测试，全部通过——然后第一次真跑就失败了。</div>
+</div>
+</section>
+
+<section id="exp">
+<h2><span class="n">3</span>实验</h2>
+<p>所有数字都来自当天的日志、账本和数据表，没有估算值；标“约”的是原始记录里就写着“约”。</p>
+
+<h3>3.1 T0–T3：机制能不能落地</h3>
+<div class="fig scroll">
+<table>
+<tr><th>编号</th><th>测什么</th><th>结果</th><th>关键证据</th></tr>
+<tr><td>T0</td><td>不带 <code>--bare</code> 的 DeepSeek 能否拉子代理</td><td class="pass">过</td><td>主进程有 Agent 调用，子代理消息带 <code>parent_tool_use_id</code>，调用 id 是 DeepSeek 风格</td></tr>
+<tr><td>T1</td><td>PreToolUse 钩子当路由器</td><td class="pass">过</td><td>主进程 Write 被退出码 2 拦下，子代理放行</td></tr>
+<tr><td>T2</td><td>账本 + 完成闸门</td><td class="pass">过</td><td>验收不过时 <code>status=failed</code>，脚本退出码 1</td></tr>
+<tr><td>T3</td><td>SubagentStop 打回</td><td class="pass">过</td><td>第一次拦下，子代理自己补写文件，第二次放行</td></tr>
+</table>
+<div class="cap"><b>表 1</b> 四项全过。机制在技术上都能做——这恰恰让我们继续往上加。</div>
+</div>
+
+<h3>3.2 T4：谁来写规格？两条路线对比</h3>
+<p>同一道题（任务队列收尾逻辑），路线 A 由 DeepSeek Pro 写规格，路线 B 由 Opus 写规格；执行和初审都是 Flash，终审都是 Opus。另有 5 个隐藏验收用例。</p>
+<div class="fig">
+  <div class="controls" id="t4Ctl"></div>
+  <div class="legend" id="t4Leg"></div>
+  <div id="t4Chart"></div>
+  <div class="cap"><b>图 2</b> T4 每一步的耗时或 DeepSeek 费用（悬停看详情）。Opus 步骤按 token 计费，不在美元费用图里。<b>两条路线都被 Opus 终审打回返工</b>，而隐藏验收在每个版本上都是 5/5——测试全绿，问题是终审看出来的。</div>
+</div>
+<div class="fig scroll">
+<table>
+<tr><th>合计</th><th>A：Pro 写规格</th><th>B：Opus 写规格</th></tr>
+<tr><td>返工轮数</td><td>2</td><td>1</td></tr>
+<tr><td>DeepSeek 时间</td><td>1,118 秒</td><td>689 秒</td></tr>
+<tr><td>DeepSeek 费用</td><td>$2.89</td><td>$1.43</td></tr>
+<tr><td>Opus 输出 token</td><td>3,400</td><td>11,250</td></tr>
+<tr><td>最终测试</td><td>153 OK</td><td>149 OK</td></tr>
+<tr><td>改动量</td><td>+572 / −26</td><td>+381 / −24</td></tr>
+</table>
+<div class="cap"><b>表 2</b> 结论：写规格的是谁不关键，<b>终审才是兜底的那一层</b>。注意只测了一道题。</div>
+</div>
+
+<h3>3.3 T5：Flash 还是 Pro？</h3>
+<div class="fig">
+  <div class="legend"><span><i style="background:var(--c1)"></i>Flash</span><span><i style="background:var(--c2)"></i>Pro</span><span><i style="background:var(--bad)"></i>脚手架误拦（非模型问题）</span></div>
+  <div id="t5Chart"></div>
+  <div class="cap"><b>图 3</b> 3 道题 × 2 个模型 × 2 次，共 12 次正式运行（账本时间戳相减）。验收命令 <b>0 次误拦</b>；唯一一次失败来自闸门配置，重跑即过。Flash 平均 <b>19 秒</b>，Pro 平均 <b>55 秒</b>，全部通过验收。</div>
+</div>
+
+<h3>3.4 T6：DeepSeek 停不下来</h3>
+<p>让 Opus 子代理和 DeepSeek Flash 分别对同一份需求“拷问”Kurt，直到定稿。</p>
+<div class="fig">
+  <div id="t6Chart"></div>
+  <div class="cap"><b>图 4</b> 左右分别归一化到较大者。DeepSeek 把“最多问 4 个”理解成“必须问满 4 个”，问到第 6 轮还在问（第 5 轮的 4 题被误触拒绝后才定稿），还自己推出了一条 Kurt 没确认过的规则。<b>方案质量至今没打分</b>，所以这里只说明一件事：<b>停止不能靠执行者自觉</b>。</div>
+</div>
+
+<h3>3.5 1.0.0 的真实第一单</h3>
+<div class="fig">
+  <div id="v1Chart"></div>
+  <div class="cap"><b>图 5</b> 一道“加一个 <code>sub</code> 函数”的小题。1.0.0：写卡的 Flash 照抄了一条需要 <code>tests/__init__.py</code> 的测试命令，卡里又写着“不许加 <code>__init__.py</code>”。第 1 轮验收失败；第 2 轮补了文件，验收过了，却被闸门判越界；第 3 轮卡住，被手动停掉。2.0.0（删掉闸门、验收命令、多轮）同一道题 <b>7 轮、11 秒</b>完成。</div>
+</div>
+
+<h3>3.6 2.1.0：把子代理找回来（今天）</h3>
+<p>同一个只读冒烟任务：“用子代理读 AGENTS.md 返回第一行，再试着写一个文件（应被拒）。”点步骤看每次改了什么。</p>
+<div class="fig">
+  <div class="controls" id="smCtl"></div>
+  <div id="smChart"></div>
+  <div class="cap" id="smCap"></div>
+</div>
+</section>
+
+<section id="forgot">
+<h2><span class="n">4</span>被忘了三次的事</h2>
+<p>这篇报告最该被记住的部分不是哪张图，而是这条时间线。</p>
+<div class="fig">
+<div class="ft">
+  <div class="ev"><div class="d">11-09 · 探针</div>显式允许 7 个工具（含 Agent），DeepSeek 只看到 Bash、Edit、Read 三个。报告写了“7 个只看到 3 个”，<b>没解释</b>。</div>
+  <div class="ev ok"><div class="d">11-12 上午 · T0</div>查清原因：<code>--bare</code> 模式只给三个工具，还会把 <code>CLAUDE_CODE_SIMPLE=1</code> 传给下一层。去掉 <code>--bare</code> 后子代理能拉起，也确实跑在 DeepSeek 上。写进了两份笔记。</div>
+  <div class="ev bad"><div class="d">11-12 中午 · 2.0.0</div>大简化时，新脚本又写回了 <code>--bare</code>，SKILL.md 里还认真记了一句“拉不起子代理”——把一个可修的限制当成了既定事实。笔记里甚至写着“普通任务继续用 --bare”。</div>
+  <div class="ev bad"><div class="d">11-12 下午 · 2.1.0 第 1、2 次尝试</div>Kurt 问“为什么还不能拉子代理”。先把 Agent 加进允许名单——没用；再用 <code>--tools</code> 显式列工具——还是没用，连 Glob、Grep 都没有。</div>
+  <div class="ev ok"><div class="d">11-12 下午 · 2.1.0</div>去掉 <code>--bare</code>，改用独立配置目录 + <code>--strict-mcp-config</code> 隔离。子代理成功；顺手发现只读模式其实拦不住写文件（acceptEdits 会自动放行），一并修掉。</div>
+</div>
+</div>
+<p>答案在 T0 里已经有了，笔记也写了两份。可是做 2.0.0 的那一轮对话没有去读它，新脚本是照着旧脚本改的，旧脚本里就带着 <code>--bare</code>。<b>写下来的经验只在有人读的时候才算数；真正能保住它的，是写进会被执行的东西里</b>——所以 2.1.0 把原因写成了脚本里紧挨着那一行的注释。</p>
+</section>
+
+<section id="concl">
+<h2><span class="n">5</span>结论：Kurt's Bitter Lesson</h2>
+<div class="quote">在 AI 智能体上叠人手编排的流程机制，长期看赢不过：给执行者完整的工具，加一条硬上限，再让强模型做一次独立检查。</div>
+<p>Rich Sutton 的 <i>The Bitter Lesson</i> 说，长期看，依靠通用计算的方法总会赢过人手编进去的领域知识。我们在一个小得多的尺度上，花一天时间把这件事亲身走了一遍。点开每条看证据。</p>
+<ol class="lessons" id="lessons"></ol>
+</section>
+
+<section id="limit">
+<h2><span class="n">6</span>局限</h2>
+<ul>
+<li>样本很小：T4 只有一道题，T5 是 3 道题各 2 次，T6 没有打分。任何“Flash 比 Pro 好”“Opus 写规格更省”的说法都只是暂定。</li>
+<li>所有实验都在一台 Windows 机器、同一天、同一个人身上完成；没测并发、长任务和超时看门狗。</li>
+<li>额度百分比只有整数，单次 Opus 调用的成本看不出来，所以“省了多少 Claude 额度”没有可靠数字。</li>
+<li>闸门在真实派单里的拦截率和误拦率从没测过——在测之前它就被删了。</li>
+<li>2.1.0 去掉 <code>--bare</code> 后，DeepSeek 会读到项目自己的 CLAUDE.md / AGENTS.md；这被当成好事，但长期影响没观察。</li>
+</ul>
+</section>
+
+<section id="appx">
+<h2><span class="n">附录</span>现行规则（2.1.0）摘要</h2>
+<div class="fig scroll">
+<table>
+<tr><th>场景</th><th>做法</th></tr>
+<tr><td>主对话是 Opus（稳定档）</td><td>能交给 DeepSeek 就交，自己只做一两步的小事、要用 MCP/浏览器/Artifact 的活、要来回商量的设计决定；DeepSeek 做完由 Opus 看 diff 和测试</td></tr>
+<tr><td>主对话是 Haiku（省流档）</td><td>只聊天；工程请求把原话写进任务文件，跑派发命令，结果原样转达</td></tr>
+<tr><td>派发脚本</td><td>一个 PowerShell 脚本：剥掉继承的 Claude 环境变量、指向 DeepSeek、独立配置目录、80 轮封顶、打印最终回复</td></tr>
+<tr><td>权限</td><td>dev：全部基础工具 + 子代理，禁网络、禁 push、禁删目录等；strict：只读 + 子代理，显式禁 Edit/Write</td></tr>
+<tr><td>停止</td><td>只靠 <code>--max-turns</code>，不靠模型说“做完了”</td></tr>
+</table>
+</div>
+<p style="color:var(--ink3);font-size:13px">被删掉的机制：额度切档、Flash 代码摘要、规格写手、Flash 初审、Opus 短命总管、闸门（GATE-ACCEPT / GATE-ALLOW）、账本、副本隔离、多轮返工、写卡步骤、模板、30 条单元测试、Haiku 传话层。</p>
+</section>
+
+<footer>
+Kurt's Bitter Lesson · 2026-11-12 · 数据来源：复盘笔记 <code>dispatch-v2-lessons.md</code>、T4 数据表、T5 账本 <code>ledger.jsonl</code>、T0–T3 与 T6 实测记录、当天冒烟测试输出。单文件，无外部依赖。
+</footer>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const css=v=>`var(${v})`; // live CSS var, so charts follow the theme without redrawing
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;moveTip(e)}
+function moveTip(e){const x=Math.min(e.clientX+14,innerWidth-290);tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.style.opacity=0}
+function el(tag,attrs,parent){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in attrs){const v=String(attrs[k]);if((k==='fill'||k==='stroke')&&v.startsWith('var('))n.style[k]=v;else n.setAttribute(k,v)}if(parent)parent.appendChild(n);return n}
+// direct node.setAttribute('fill', 'var(--x)') calls below also need to go through style
+const _sa=SVGElement.prototype.setAttribute;
+SVGElement.prototype.setAttribute=function(k,v){if((k==='fill'||k==='stroke')&&String(v).startsWith('var(')){this.style[k]=v;return}return _sa.call(this,k,v)};
+function svg(w,h){return el('svg',{viewBox:`0 0 ${w} ${h}`,role:'img'})}
+function hover(node,html){node.style.cursor='default';node.addEventListener('mousemove',e=>showTip(e,html));node.addEventListener('mouseleave',hideTip);node.addEventListener('touchstart',e=>{showTip(e.touches[0],html)},{passive:true})}
+function tabs(ctl,items,onPick,init){ctl.innerHTML='';items.forEach((it,i)=>{const b=document.createElement('button');b.className='tab';b.textContent=it.label;b.setAttribute('aria-pressed',i===init);b.onclick=()=>{[...ctl.children].forEach(c=>c.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');onPick(it,i)};ctl.appendChild(b)});onPick(items[init],init)}
+
+/* ---------- versions ---------- */
+const V=[
+ {v:'0.3',d:'及以前',title:'Haiku 主对话 + 三模式表',dead:true,
+  what:['主对话固定 Haiku，只对话、转交、汇总、轻量验收','按额度 60% 阈值切普通 / 省流；另有手动“全量模式”','验收靠主对话看 git diff，需要时弹窗建议升 Opus'],
+  why:'模式和阈值越来越多，规则本身成了要维护的东西。'},
+ {v:'0.4',d:'V2 流水线',title:'摘要 → 规格 → 执行 → 初审 → 终审',dead:true,
+  what:['额度 ≥80%（5 小时）或 ≥70%（周）进省流档','Flash 写代码摘要，Opus 只看摘要写规格','Flash 执行 + Flash 初审，Opus 终审；闸门是唯一完成检查','返工最多一轮，在副本里做（防看到旧答案）'],
+  why:'T4 实测：规格谁写差别不大，终审最有价值；整条链太长，每次都要重读上下文。'},
+ {v:'0.5',d:'传话层',title:'Haiku 只传话，Opus 当总管',dead:true,
+  what:['主对话只把工程请求压缩后转给新开的 Opus 总管','13 个文件：流水线、闸门、副本脚本、6 份提示词模板'],
+  why:'Haiku 分不清 Kurt 是在跟它说话还是要它转出去——“该不该转”本身就是判断，而规则禁止它判断。'},
+ {v:'1.0',d:'分档 + 闸门',title:'按主对话模型分档，脚本强制停',dead:true,
+  what:['Opus 稳定档：自己做，大任务写卡派 Flash','Haiku 省流档：一条命令先写卡再执行','dispatch.ps1：写卡、闸门、最多 3 轮；30 条单元测试全过'],
+  why:'真跑第一单：验收命令需要 __init__.py，卡里又禁止加它。三轮耗光，被手动停掉。'},
+ {v:'2.0',d:'大砍',title:'一个 skill + 一个脚本',dead:true,
+  what:['删掉闸门、验收命令、多轮返工、写卡、账本、模板、全部测试','脚本只负责启动 DeepSeek、80 轮封顶、打印回复','检查交还主对话：Opus 自己看 diff'],
+  why:'方向对了，但脚本带着 --bare，子代理没了，还被记成“DeepSeek 的限制”。'},
+ {v:'2.1',d:'现行',title:'能交给 DeepSeek 就交',dead:false,
+  what:['稳定档从“大任务才派”改成“能派就派”','去掉 --bare，用独立配置目录 + --strict-mcp-config 隔离','允许 Agent 工具；只读档显式禁 Edit/Write','冒烟测试：子代理成功、只读写入被拒、dev 子代理写文件成功'],
+  why:''}
+];
+const vt=$('#vt'),vc=$('#vcard');
+function showV(i){const x=V[i];[...vt.children].forEach((b,j)=>b.setAttribute('aria-pressed',i===j));
+ vc.innerHTML=`<h4>${x.v} · ${x.title}<span class="tag ${x.dead?'dead':'live'}">${x.dead?'已废弃':'在用'}</span></h4><ul>${x.what.map(w=>`<li>${w}</li>`).join('')}</ul>${x.why?`<p style="margin-top:10px"><b>${x.dead?'为什么死：':''}</b>${x.why}</p>`:''}`}
+V.forEach((x,i)=>{const b=document.createElement('button');b.innerHTML=`${x.v}<small>${x.d}</small>`;b.onclick=()=>showV(i);vt.appendChild(b)});
+showV(5);
+
+/* ---------- complexity ---------- */
+const CX=[{v:'0.4.1',files:1,bytes:7111,note:'归档只存了 SKILL.md'},{v:'0.5.0',files:13,bytes:23552},{v:'1.0.0',files:13,bytes:65288,note:'另含 30 条测试'},{v:'2.0.0',files:3,bytes:8028},{v:'2.1.0',files:3,bytes:9247}];
+function drawCx(key){const W=640,H=250,L=56,B=34,T=14,R=10,s=svg(W,H);const box=$('#cxChart');box.innerHTML='';box.appendChild(s);
+ const max=Math.max(...CX.map(d=>d[key]))*1.12;const bw=(W-L-R)/CX.length;
+ for(let g=0;g<=4;g++){const y=T+(H-T-B)*g/4;el('line',{x1:L,x2:W-R,y1:y,y2:y,class:'axis'},s);const t=el('text',{x:L-8,y:y+4,'text-anchor':'end'},s);const val=max*(1-g/4);t.textContent=key==='bytes'?(val/1000).toFixed(0)+'K':val.toFixed(0)}
+ CX.forEach((d,i)=>{const h=(H-T-B)*d[key]/max,x=L+i*bw+bw*.22,w=bw*.56,y=H-B-h;
+  const r=el('rect',{x,y,width:w,height:h,rx:4,fill:d.v==='2.1.0'?css('--accent'):(d.v==='1.0.0'?css('--bad'):css('--c1')),opacity:d.v==='0.4.1'?.45:1},s);
+  hover(r,`<b>${d.v}</b><br>${d.files} 个文件 · ${d.bytes.toLocaleString()} 字节${d.note?'<br>'+d.note:''}`);
+  const lb=el('text',{x:x+w/2,y:H-B+18,'text-anchor':'middle'},s);lb.textContent=d.v;
+  const vl=el('text',{x:x+w/2,y:y-6,'text-anchor':'middle'},s);vl.textContent=key==='bytes'?(d.bytes/1000).toFixed(1)+'K':d.files;});
+}
+tabs($('#cxCtl'),[{label:'总字节数',k:'bytes'},{label:'文件数',k:'files'}],it=>drawCx(it.k),0);
+
+/* ---------- T4 ---------- */
+const T4=[
+ {r:'A',s:'A1 规格',who:'Pro',sec:374,usd:1.322,res:'120 行，2 条覆盖路径'},
+ {r:'A',s:'A2 执行',who:'Flash',sec:89,usd:.128,res:'闸门一次过，145 tests OK'},
+ {r:'A',s:'A3 初审',who:'Flash',sec:96,usd:.195,res:'有条件通过（高 1、中 2）'},
+ {r:'A',s:'A4 终审',who:'Opus',sec:39,usd:null,res:'返工：先公布后清理（规格带入）'},
+ {r:'A',s:'A6 返工',who:'Flash',sec:163,usd:.334,res:'150 tests OK'},
+ {r:'A',s:'A7 初审',who:'Flash',sec:107,usd:.25,res:'_finalizing 撞 remove_task 留僵尸'},
+ {r:'A',s:'A8 再修',who:'Flash',sec:178,usd:.412,res:'153 tests OK'},
+ {r:'A',s:'A8 初审',who:'Flash',sec:111,usd:.252,res:'有条件通过，剩 2 个中等问题'},
+ {r:'B',s:'B1 摘要',who:'Flash',sec:219,usd:.469,res:'194 行'},
+ {r:'B',s:'B2 规格',who:'Opus',sec:94,usd:null,res:'121 行，5 条覆盖路径'},
+ {r:'B',s:'B3 执行',who:'Flash',sec:136,usd:.232,res:'147 tests OK'},
+ {r:'B',s:'B4 初审',who:'Flash',sec:124,usd:.261,res:'有条件通过（中 4）'},
+ {r:'B',s:'B5 终审',who:'Opus',sec:25,usd:null,res:'返工：_failing 泄漏、缺 try/finally'},
+ {r:'B',s:'B6 返工',who:'Flash',sec:95,usd:.205,res:'149 tests OK'},
+ {r:'B',s:'B 初审',who:'Flash',sec:115,usd:.263,res:'清理异常吞掉失败结局（中高）'}];
+const whoC={Pro:'--c2',Flash:'--c1',Opus:'--c4'};
+$('#t4Leg').innerHTML=['Flash','Pro','Opus'].map(w=>`<span><i style="background:var(${whoC[w]})"></i>${w}</span>`).join('')+'<span>⟲ = 终审打回</span>';
+function drawT4(key){const box=$('#t4Chart');box.innerHTML='';const rowH=22,L=78,R=60,W=640,H=T4.length*rowH+34,s=svg(W,H);box.appendChild(s);
+ const vals=T4.map(d=>d[key]||0),max=Math.max(...vals);
+ T4.forEach((d,i)=>{const y=10+i*rowH+(d.r==='B'?12:0);const v=d[key];
+  const t=el('text',{x:L-8,y:y+14,'text-anchor':'end'},s);t.textContent=d.s;
+  if(v==null){const n=el('text',{x:L+4,y:y+14},s);n.textContent='（按 token 计）';n.setAttribute('opacity',.6);return}
+  const w=(W-L-R)*v/max;const r=el('rect',{x:L,y:y+3,width:Math.max(w,2),height:rowH-8,rx:3,fill:css(whoC[d.who])},s);
+  hover(r,`<b>${d.s}</b> · ${d.who}<br>${d.sec} 秒${d.usd!=null?' · $'+d.usd.toFixed(3):''}<br>${d.res}`);
+  const vl=el('text',{x:L+w+6,y:y+14},s);vl.textContent=key==='sec'?v+'s':'$'+v.toFixed(2)+(d.res.startsWith('返工')?' ⟲':'');
+  if(key==='sec'&&d.res.startsWith('返工'))vl.textContent+=' ⟲';});
+ const sep=el('line',{x1:0,x2:W,y1:10+8*rowH+6,y2:10+8*rowH+6,class:'axis','stroke-dasharray':'3 3'},s);
+}
+tabs($('#t4Ctl'),[{label:'耗时（秒）',k:'sec'},{label:'DeepSeek 费用（$）',k:'usd'}],it=>drawT4(it.k),0);
+
+/* ---------- T5 ---------- */
+const T5=[['A','Flash',1,15.3],['A','Pro',1,31.9],['B','Flash',1,20.3],['B','Pro',1,76.5],['C','Flash',1,25.5],['C','Pro',1,49.9],
+ ['A','Flash',2,14.6],['A','Pro',2,33.9],['B','Flash',2,18.0],['B','Pro',2,46.2],['C','Flash',2,21.8],['C','Pro',2,94.5]];
+(function(){const W=640,H=200,L=40,R=20,T=12,B=34,s=svg(W,H);$('#t5Chart').appendChild(s);const max=100;
+ const X=v=>L+(W-L-R)*v/max;const rows=['A','B','C'];const rh=(H-T-B)/3;
+ for(let g=0;g<=5;g++){const x=X(g*20);el('line',{x1:x,x2:x,y1:T,y2:H-B,class:'axis'},s);const t=el('text',{x,y:H-B+16,'text-anchor':'middle'},s);t.textContent=g*20+'s'}
+ rows.forEach((r,i)=>{const t=el('text',{x:L-12,y:T+rh*i+rh/2+4,'text-anchor':'end'},s);t.textContent='题 '+r});
+ // failed scaffold run
+ const fy=T+rh*0+rh/2-8;const f=el('circle',{cx:X(15.1),cy:fy,r:6,fill:'none',stroke:css('--bad'),'stroke-width':2},s);hover(f,'<b>A · Flash · 第 1 次（首跑）</b><br>15.1 秒 · 验收退出码 1<br>原因是闸门配置，不是模型；重跑即过');
+ T5.forEach(([r,m,k,v])=>{const i=rows.indexOf(r);const cy=T+rh*i+rh/2+(m==='Pro'?8:(k===1?0:0))-(m==='Flash'?0:0)+(m==='Pro'?0:0);
+  const c=el('circle',{cx:X(v),cy:T+rh*i+rh/2+(m==='Pro'?7:-1)+(k===2?0:0),r:6,fill:css(m==='Pro'?'--c2':'--c1'),opacity:.9},s);
+  hover(c,`<b>题 ${r} · ${m} · 第 ${k} 次</b><br>${v} 秒 · 验收通过`)});
+ const avg=[['Flash',19.25,'--c1'],['Pro',55.48,'--c2']];avg.forEach(([m,v,c])=>{const x=X(v);el('line',{x1:x,x2:x,y1:T,y2:H-B,stroke:css(c),'stroke-dasharray':'4 3','stroke-width':1.5},s);const t=el('text',{x:x+4,y:T+10},s);t.textContent=m+' 均值 '+v.toFixed(0)+'s';t.setAttribute('fill',css(c))});
+})();
+
+/* ---------- T6 ---------- */
+(function(){const M=[['轮数',3,6,''],['回答的问题',7,16,' 题'],['耗时',46,143,' 秒'],['定稿测试条数',9,13,' 条']];
+ const W=640,rh=46,H=M.length*rh+16,L=120,s=svg(W,H);$('#t6Chart').appendChild(s);const mid=L+(W-L)/2;
+ const a=el('text',{x:mid-8,y:10,'text-anchor':'end'},s);a.textContent='Opus 子代理';a.setAttribute('fill',css('--c4'));
+ const b=el('text',{x:mid+8,y:10},s);b.textContent='DeepSeek Flash';b.setAttribute('fill',css('--c1'));
+ M.forEach(([k,o,d,u],i)=>{const y=22+i*rh,mx=Math.max(o,d),half=(W-L)/2-50;
+  const t=el('text',{x:0,y:y+17},s);t.textContent=k;
+  const wo=half*o/mx,wd=half*d/mx;
+  const r1=el('rect',{x:mid-wo,y,width:wo,height:24,rx:3,fill:css('--c4')},s);hover(r1,`Opus：${o}${u}`);
+  const r2=el('rect',{x:mid,y,width:wd,height:24,rx:3,fill:css('--c1')},s);hover(r2,`DeepSeek：${d}${u}`);
+  const t1=el('text',{x:mid-wo-6,y:y+17,'text-anchor':'end'},s);t1.textContent=o;
+  const t2=el('text',{x:mid+wd+6,y:y+17},s);t2.textContent=d;});
+})();
+
+/* ---------- v1 vs v2 ---------- */
+(function(){const W=640,H=150,L=70,s=svg(W,H);$('#v1Chart').appendChild(s);
+ const steps1=[['第 1 轮','验收失败：缺 __init__.py','--bad'],['第 2 轮','验收过，闸门判越界','--bad'],['第 3 轮','卡住，手动停掉','--bad']];
+ const t=el('text',{x:0,y:40},s);t.textContent='1.0.0';const t2=el('text',{x:0,y:112},s);t2.textContent='2.0.0';
+ const bw=(W-L)/3-8;steps1.forEach(([a,b,c],i)=>{const x=L+i*(bw+8);const r=el('rect',{x,y:18,width:bw,height:36,rx:6,fill:'none',stroke:css(c),'stroke-width':1.5},s);hover(r,`<b>${a}</b><br>${b}`);
+  const tx=el('text',{x:x+10,y:34},s);tx.textContent=a;const ty=el('text',{x:x+10,y:48},s);ty.textContent=b;ty.setAttribute('opacity',.8)});
+ const r=el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:css('--ok'),opacity:.16},s);el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:'none',stroke:css('--ok'),'stroke-width':1.5},s);
+ const a=el('text',{x:L+10,y:106},s);a.textContent='一次';const b2=el('text',{x:L+10,y:120},s);b2.textContent='7 轮 · 11 秒 · 测试 OK';
+ hover(r,'<b>2.0.0</b><br>没有闸门、没有验收命令，同一道题直接做完');
+})();
+
+/* ---------- smoke steps ---------- */
+const SM=[
+ {label:'2.0.0 原样',tools:['Bash','Read','Edit'],agent:false,write:'—',turns:2,secs:3,cap:'只读小任务能跑通（2 轮、3 秒），但这时还没测子代理。'},
+ {label:'+ 允许 Agent',tools:['Bash','Read','Edit'],agent:false,write:'没有 Write 工具',turns:3,secs:6,cap:'只把 Agent 加进允许名单：DeepSeek 报告“本次会话未提供 Agent 与 Write 工具”。允许名单管的是权限，不是工具有没有。'},
+ {label:'+ --tools',tools:['Bash','Read'],agent:false,write:'没有 Write 工具',turns:4,secs:7,cap:'再用 --tools 显式列全工具：只剩 Bash 和 Read，更少了。--bare 下这个参数不起作用。'},
+ {label:'去掉 --bare（只读）',tools:['Read','Glob','Grep','Agent','Bash'],agent:true,write:'被拒 ✓',turns:4,secs:8,cap:'去掉 --bare，靠独立配置目录和 --strict-mcp-config 隔离：子代理返回 “## Hub”，写文件被拒，目录里没有生成文件。'},
+ {label:'去掉 --bare（dev）',tools:['Read','Edit','Write','Glob','Grep','NotebookEdit','TodoWrite','Agent','Bash'],agent:true,write:'子代理写入成功 ✓',turns:3,secs:15,cap:'正常模式：子代理新建 hello.txt，内容 ok，主进程读回确认。'}];
+const ALL=['Read','Edit','Write','Glob','Grep','NotebookEdit','TodoWrite','Agent','Bash'];
+function drawSm(x){const box=$('#smChart');box.innerHTML='';const W=640,H=120,s=svg(W,H);box.appendChild(s);const cw=(W)/ALL.length;
+ ALL.forEach((t,i)=>{const on=x.tools.includes(t);const cx=i*cw+4;const r=el('rect',{x:cx,y:10,width:cw-8,height:40,rx:6,fill:on?css(t==='Agent'?'--accent':'--c3'):'none',stroke:on?'none':css('--line'),'stroke-width':1.5,opacity:on?.9:1},s);
+  hover(r,`${t}：${on?'可用':'不可用'}`);const tx=el('text',{x:cx+(cw-8)/2,y:34,'text-anchor':'middle'},s);tx.textContent=t==='NotebookEdit'?'Notebook':t;if(on)tx.setAttribute('fill',css('--bg'));});
+ const facts=[`子代理：${x.agent?'成功 ✓':'拿不到 ✗'}`,`写入：${x.write}`,`${x.turns} 轮 · ${x.secs} 秒`];
+ facts.forEach((f,i)=>{const t=el('text',{x:4+i*(W/3),y:84},s);t.textContent=f;t.setAttribute('style','font-size:14px');if(i===0)t.setAttribute('fill',css(x.agent?'--ok':'--bad'))});
+ $('#smCap').innerHTML='<b>图 6</b> '+x.cap;}
+tabs($('#smCtl'),SM.map((x,i)=>({label:(i+1)+'. '+x.label,x})),it=>drawSm(it.x),0);
+
+/* ---------- lessons ---------- */
+const LS=[
+ ['每多一道机器检查，就多一个检查之间互相打架的失败点。','1.0.0 的验收命令要求 __init__.py，允许名单禁止它。执行者无论怎么做都会被其中一个判失败，三轮耗光（图 5）。而写这些检查配置的，正是链条里最弱的那个模型。'],
+ ['停止条件交给脚本，不要交给模型的自觉。','T6 里 DeepSeek 把“最多 4 个”当成“必须 4 个”，6 轮还在问（图 4）。一个 --max-turns 就解决了，不需要轮数、闸门、返工三件套。'],
+ ['测试全绿不等于做对了；最值钱的是一次强模型的独立终审。','T4 两条路线隐藏验收都是 5/5，测试都通过，但两边都被 Opus 终审打回返工（图 2）。所以现行规则保留的唯一检查就是“Opus 看 diff 和测试”。'],
+ ['别让弱模型当路由器。','0.5.0 让 Haiku 判断“这句该自己答还是转给 Opus”，它分不清。判断“该不该转”本身就是判断，而规则又禁止它判断。'],
+ ['先真跑一单，再加机制。','1.0.0 的 30 条单元测试（假的 claude）全部通过，真跑第一单就失败。测试验证的是机制本身，不是机制在真实任务里有没有用。'],
+ ['给执行者完整的工具，比替它编排流程更有效。','整条“摘要→规格→执行→初审→终审”链，本质上是在用人手编排替代子代理。2.1.0 把子代理还给 DeepSeek 之后，它可以自己拆任务——这正是 Sutton 那句话在小尺度上的样子。'],
+ ['写下来的经验只在被读到时才算数；能保住它的是会被执行的东西。','“--bare 会砍掉子代理”在 11-09 被观察到、11-12 被查清、写进两份笔记，2.0.0 还是把它写回了脚本（第 4 节）。2.1.0 把原因写成紧挨着那一行的代码注释。']];
+const ol=$('#lessons');LS.forEach(([a,b],i)=>{const li=document.createElement('li');li.innerHTML=`<b>${a}</b><div class="ev2">${b}</div>`;li.onclick=()=>li.classList.toggle('open');if(i===0)li.classList.add('open');ol.appendChild(li)});
+
+/* ---------- theme ---------- */
+let theme=null;try{theme=localStorage.getItem('kbl-theme')}catch(e){}
+if(theme)document.documentElement.setAttribute('data-theme',theme);
+$('#themebtn').onclick=()=>{const dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);
+ const nt=dark?'light':'dark';document.documentElement.setAttribute('data-theme',nt);try{localStorage.setItem('kbl-theme',nt)}catch(e){}};
+})();
+</script>
+</body>
+</html>
