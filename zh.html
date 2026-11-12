@@ -4,49 +4,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kurt's Bitter Lesson</title>
-<meta name="description" content="一个人用 Claude 和 DeepSeek 搭派发流水线的六轮迭代、实测数据和结论。">
+<meta name="description" content="AI 辅助工程的两种美好设想，一天的架构与补丁，以及一个小模型答不上来的问题：你在跟谁说话？">
+<meta property="og:title" content="Kurt's Bitter Lesson">
+<meta property="og:description" content="省流模式与稳定工程模式，一天里搭了六版架构，以及我们为什么退回到最简单的做法。">
 <style>
 :root{
   --bg:#faf8f4; --paper:#ffffff; --ink:#1d1b18; --ink2:#5b5650; --ink3:#8d877f;
   --line:#e6e1d8; --accent:#b4532a; --accent-soft:#f6e7de;
-  --c1:#2f6fb0; --c2:#c4682f; --c3:#3f8f5a; --c4:#8a5cb0; --bad:#b83a3a; --ok:#2f8a55;
+  --eco:#2f8a7a; --eco-soft:#e0f1ed; --sta:#4b5fb5; --sta-soft:#e6e9f7;
+  --c1:#2f6fb0; --c2:#c4682f; --c3:#3f8f5a; --c4:#8a5cb0; --bad:#b83a3a; --ok:#2f8a55; --mute:#c9c3b9;
   --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
-  --serif:"Source Serif Pro","Noto Serif SC","Songti SC",Georgia,serif;
-  --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --serif:"Source Serif Pro","Iowan Old Style",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#16151a; --paper:#1e1d23; --ink:#ece8e1; --ink2:#b3ada4; --ink3:#7f7a73;
     --line:#33313a; --accent:#e58a5c; --accent-soft:#3a2a22;
-    --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a;
+    --eco:#5cc4b0; --eco-soft:#1d3330; --sta:#8a9cf0; --sta-soft:#252a45;
+    --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a; --mute:#4a4752;
   }
 }
 :root[data-theme="dark"]{
   --bg:#16151a; --paper:#1e1d23; --ink:#ece8e1; --ink2:#b3ada4; --ink3:#7f7a73;
   --line:#33313a; --accent:#e58a5c; --accent-soft:#3a2a22;
-  --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a;
+  --eco:#5cc4b0; --eco-soft:#1d3330; --sta:#8a9cf0; --sta-soft:#252a45;
+  --c1:#6fa8e0; --c2:#e8955c; --c3:#6cc08a; --c4:#b892de; --bad:#e46d6d; --ok:#5fc48a; --mute:#4a4752;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 var(--sans)}
 .wrap{max-width:820px;margin:0 auto;padding:0 16px 80px}
 header.hero{padding:72px 0 28px;border-bottom:1px solid var(--line)}
 .kicker{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-h1{font:700 clamp(36px,7vw,60px)/1.05 var(--serif);margin:14px 0 14px;letter-spacing:-.01em}
-.sub{color:var(--ink2);font-size:18px;margin:0}
+h1{font:700 clamp(38px,7.5vw,64px)/1.05 var(--serif);margin:14px 0 14px;letter-spacing:-.015em}
+.sub{color:var(--ink2);font-size:19px;margin:0}
 .meta{color:var(--ink3);font-size:13px;margin-top:18px}
-h2{font:700 26px/1.3 var(--serif);margin:56px 0 8px}
+h2{font:700 27px/1.3 var(--serif);margin:60px 0 8px}
 h2 .n{color:var(--accent);margin-right:10px}
 h3{font:600 18px/1.4 var(--sans);margin:30px 0 6px}
 p{margin:10px 0}
-code{font:13.5px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+code{font:14px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+a{color:var(--accent)}
 .abstract{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);padding:18px 22px;border-radius:8px;margin:28px 0}
 .abstract b{color:var(--accent)}
 nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
 nav.toc a{font-size:13px;color:var(--ink2);text-decoration:none;border:1px solid var(--line);padding:4px 10px;border-radius:999px;background:var(--paper)}
 nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
 .fig{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 18px 12px;margin:22px 0}
-.fig .cap{font-size:13px;color:var(--ink2);margin-top:8px}
+.fig .cap{font-size:13.5px;color:var(--ink2);margin-top:10px}
 .fig .cap b{color:var(--ink)}
 .controls{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 button.tab{font:500 13px var(--sans);border:1px solid var(--line);background:transparent;color:var(--ink2);padding:5px 12px;border-radius:6px;cursor:pointer}
@@ -54,54 +60,89 @@ button.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-col
 svg{display:block;width:100%;height:auto;overflow:visible}
 svg text{fill:var(--ink2);font:12px var(--sans)}
 svg .axis{stroke:var(--line)}
-.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.5;padding:7px 10px;border-radius:6px;max-width:280px;opacity:0;transition:opacity .12s;z-index:9}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-weight:600;color:var(--ink2);font-size:12.5px}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.5;padding:7px 10px;border-radius:6px;max-width:290px;opacity:0;transition:opacity .12s;z-index:9}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink2);font-size:12.5px;text-transform:uppercase;letter-spacing:.04em}
 .scroll{overflow-x:auto}
-.pass{color:var(--ok);font-weight:600}.fail{color:var(--bad);font-weight:600}
-/* version timeline */
-.vt{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:12px}
-.vt button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 4px;cursor:pointer;font:600 14px var(--sans)}
-.vt button small{display:block;font-weight:400;color:var(--ink3);font-size:11px}
-.vt button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
-.vcard{border-top:1px dashed var(--line);padding-top:12px}
-.vcard h4{margin:0 0 4px;font:600 16px var(--sans)}
-.vcard .tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:2px}
-.tag.dead{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
-.tag.live{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
-.vcard ul{margin:6px 0 0 0;padding-left:20px}
-/* forgotten lesson timeline */
-.ft{position:relative;margin:8px 0 0;padding-left:26px}
-.ft:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
-.ft .ev{position:relative;margin:0 0 16px}
-.ft .ev:before{content:"";position:absolute;left:-23px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:2px solid var(--c1)}
-.ft .ev.bad:before{border-color:var(--bad);background:var(--bad)}
-.ft .ev.ok:before{border-color:var(--ok);background:var(--ok)}
-.ft .d{font:600 12px var(--mono);color:var(--ink3)}
+.pass{color:var(--ok);font-weight:600}
+/* visions */
+.visions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.vision{border-radius:12px;padding:18px 20px;border:1px solid var(--line)}
+.vision.eco{background:var(--eco-soft);border-color:color-mix(in srgb,var(--eco) 40%,transparent)}
+.vision.sta{background:var(--sta-soft);border-color:color-mix(in srgb,var(--sta) 40%,transparent)}
+.vision .vk{font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.vision.eco .vk{color:var(--eco)} .vision.sta .vk{color:var(--sta)}
+.vision h4{margin:4px 0 8px;font:700 21px/1.25 var(--serif)}
+.vision ul{margin:0;padding-left:18px;font-size:15px}
+.vision li{margin:4px 0}
+.vision .promise{font:italic 16px/1.5 var(--serif);margin-top:10px;color:var(--ink2)}
+/* architecture layers */
+.layers{display:grid;gap:6px}
+.layer{display:grid;grid-template-columns:130px 1fr 1fr;gap:6px;align-items:stretch;cursor:pointer}
+.layer>div{border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:13.5px;background:var(--bg)}
+.layer .ln{font-weight:600;background:transparent;border-style:dashed}
+.layer .le{border-left:3px solid var(--eco)} .layer .ls{border-left:3px solid var(--sta)}
+.layer.on>div{border-color:var(--accent)}
+.lhead{display:grid;grid-template-columns:130px 1fr 1fr;gap:6px;font:600 11.5px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+.lnote{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:14.5px;min-height:3.2em}
+.comps{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.comps span{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink2)}
+/* mechanism board */
+.vbar{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:14px}
+.vbar button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 2px;cursor:pointer;font:600 14px var(--sans)}
+.vbar button small{display:block;font-weight:400;color:var(--ink3);font-size:11px}
+.vbar button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.board{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.board h5{margin:0 0 6px;font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.chip{display:inline-block;font-size:12.5px;border-radius:6px;padding:3px 8px;margin:0 4px 5px 0;border:1px solid var(--line);transition:all .2s;cursor:default}
+.chip.alive{background:var(--paper);color:var(--ink);border-color:var(--ink3)}
+.chip.alive.new{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.chip.dead{color:var(--ink3);text-decoration:line-through;opacity:.55}
+.chip.unborn{display:none}
+.chip .fl{font-size:10px;color:var(--bad);margin-left:4px;text-decoration:none}
+.vsum{font-size:14.5px;margin:10px 0 0;border-top:1px dashed var(--line);padding-top:10px}
+/* patch log */
+.plog{position:relative}
+.pstep{display:grid;grid-template-columns:1fr 26px 1fr;gap:8px;align-items:center;margin:0 0 10px;opacity:.25;transition:opacity .25s}
+.pstep.shown{opacity:1}
+.pstep .pb{background:color-mix(in srgb,var(--bad) 10%,var(--paper));border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);border-radius:8px;padding:8px 11px;font-size:14px}
+.pstep .pp{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);border-radius:8px;padding:8px 11px;font-size:14px}
+.pstep .pa{text-align:center;color:var(--ink3);font-size:18px}
+.pstep small{display:block;color:var(--ink3);font-size:12px;margin-top:2px}
+.pctl{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.pctl .cnt{font-size:13px;color:var(--ink3)}
+/* quiz */
+.quiz{display:grid;gap:12px}
+.q{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--bg)}
+.q .msg{font:500 16px/1.5 var(--sans);margin-bottom:2px}
+.q .tr{font-size:13px;color:var(--ink3);margin-bottom:8px}
+.q .src{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.q .btns{display:flex;gap:6px;flex-wrap:wrap}
+.q button{font:500 13px var(--sans);border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:5px 12px;border-radius:6px;cursor:pointer}
+.q button.picked{border-color:var(--accent);background:var(--accent-soft)}
+.q .ans{display:none;margin-top:8px;font-size:14px;color:var(--ink2);border-top:1px dashed var(--line);padding-top:8px}
+.q.done .ans{display:block}
 /* lessons */
-.lessons{counter-reset:l;list-style:none;padding:0}
-.lessons li{counter-increment:l;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px 14px 56px;margin:10px 0;position:relative;cursor:pointer}
-.lessons li:before{content:counter(l);position:absolute;left:16px;top:12px;font:700 22px var(--serif);color:var(--accent)}
-.lessons li .ev2{display:none;color:var(--ink2);font-size:14px;margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
-.lessons li.open .ev2{display:block}
-.lessons li b{display:block}
-.quote{font:italic 21px/1.55 var(--serif);border-left:3px solid var(--accent);padding:6px 0 6px 18px;margin:26px 0;color:var(--ink)}
-.themebtn{position:fixed;top:12px;right:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;z-index:5}
-.langbtn{position:fixed;top:12px;right:92px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;text-decoration:none;z-index:5}
 .claims{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
 .claim{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;padding:16px 18px}
-.claim .ck{font:600 11px var(--sans);letter-spacing:.12em;color:var(--accent)}
+.claim .ck{font:600 11px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .claim h4{margin:4px 0 6px;font:700 19px/1.3 var(--serif)}
-.claim p{color:var(--ink2);font-size:15px}
 .claim ul{margin:6px 0 0;padding-left:18px;font-size:14.5px}
-.claim li{margin:4px 0}
-@media (max-width:640px){.claims{grid-template-columns:1fr}}
-.lessons li .cl{display:inline-block;font:600 11px var(--sans);color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:0 7px;margin-bottom:4px}
+.claim li{margin:5px 0}
+.quote{font:italic 22px/1.5 var(--serif);border-left:3px solid var(--accent);padding:6px 0 6px 18px;margin:26px 0;color:var(--ink)}
+.themebtn,.langbtn{position:fixed;top:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;z-index:5;text-decoration:none;font-family:var(--sans)}
+.themebtn{right:12px}.langbtn{right:100px}
 footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink3);font-size:13px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin:4px 0 6px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-@media (max-width:560px){.vt{grid-template-columns:repeat(3,1fr)} .lessons li{padding-left:46px} .lessons li:before{left:12px}}
+.aside{border-left:3px solid var(--line);padding:4px 0 4px 16px;color:var(--ink2);font-size:15.5px;margin:20px 0}
+@media (max-width:640px){
+  .visions,.claims,.board{grid-template-columns:1fr}
+  .vbar{grid-template-columns:repeat(3,1fr)}
+  .layer,.lhead{grid-template-columns:86px 1fr 1fr}
+  .pstep{grid-template-columns:1fr;gap:4px} .pstep .pa{transform:rotate(90deg)}
+}
 </style>
 </head>
 <body>
@@ -112,359 +153,408 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:v
 <header class="hero">
   <div class="kicker">一份个人实验报告 · 2026 年 11 月</div>
   <h1>Kurt's Bitter Lesson</h1>
-  <p class="sub">一个人、两家模型、六版派发规则：我们怎样把一条精巧的流水线，砍回一个脚本加一句“能交出去就交出去”。</p>
-  <div class="meta">Kurt × Claude（Opus / Haiku）× DeepSeek（Flash / Pro）· 数据截止 2026-11-12</div>
+  <p class="sub">与 AI 模型协作的两种美好设想，一天的架构与补丁，以及一个小模型答不上来的问题：<i>你在跟谁说话？</i></p>
+  <div class="meta">Kurt × Claude（Opus / Haiku）× DeepSeek（Flash / Pro）· 数据截至 2026-11-12</div>
   <nav class="toc">
-    <a href="#abs">摘要</a><a href="#bg">1 背景</a><a href="#iter">2 六轮迭代</a><a href="#exp">3 实验</a><a href="#forgot">4 被忘了三次的事</a><a href="#concl">5 结论</a><a href="#limit">6 局限</a><a href="#appx">附录</a>
+    <a href="#abs">摘要</a><a href="#vision">1 两种设想</a><a href="#arch">2 架构</a><a href="#tests">3 实测</a><a href="#patch">4 补丁摞补丁</a><a href="#who">5 你在跟谁说话？</a><a href="#down">6 把它拆掉</a><a href="#lesson">7 教训</a><a href="#limit">局限</a>
   </nav>
 </header>
 
 <section id="abs" class="abstract">
-  <p><b>摘要。</b>我们想让贵的模型（Claude Opus）少干活、便宜的模型（DeepSeek）多干活。为此在一天之内把派发规则 <code>delegate-coding</code> 从 0.3 改到 2.1，先后加过额度切档、代码摘要、规格写手、初审、终审、闸门、账本、副本隔离、多轮返工，又几乎全部删掉。实测显示：<b>机器检查越多，检查之间互相打架的失败点越多</b>；真正有用的只有三样东西——给执行者完整的工具、一条硬性的轮数上限、一次由强模型做的独立检查。最终版本的代码量是峰值的 <b>14%</b>，而它第一次就把 1.0 卡死的那道题做完了。另外，有一条关键事实（<code>--bare</code> 会让子代理消失）我们写下来过两次，还是在第三次又踩了一遍。</p>
-  <p><b>核心思想。</b>不要想太多架构。对强模型来说，架构很可能是<i>妨碍</i>；流程设计在纸上再合理，也很可能是<i>未经验证的空想</i>。</p>
+  <p><b>摘要。</b>我想从 AI 辅助工程里得到两样东西。一是<b>省流模式</b>：Claude 额度快用完时，活儿转到便宜模型上继续干，Claude 几乎不花钱。二是<b>稳定工程模式</b>：强模型（Claude Opus）只把力气花在判断上——写规格、做终审——体力活交给便宜模型（DeepSeek）。我们为这两种模式设计了一套分层架构，每一块都测了，结果到处是问题。每个问题都配一个新机制，每个机制又配一个补丁。一天之内，派发规则换了六版；大约 <b>36 个机制</b>来了又走，同时存活的最多时有 <b>22 个</b>。最后压垮它的事情很简单：守在门口的小模型（Claude Haiku）分不清我是在跟它说话，还是想让它把话转给 Opus——这不能用规则解决，因为“做判断”正是它被禁止做的事。我们把架构拆了。剩下的只有几行规则、一个脚本和三个机制。</p>
+  <p><b>核心想法：</b>不要想太多架构。它很有可能对强模型是妨碍；流程设计在纸上再合理，也很有可能是未经验证的空想。</p>
 </section>
 
-<section id="bg">
-<h2><span class="n">1</span>背景：一个很朴素的问题</h2>
-<p>Kurt 用 Claude Code 桌面版做工程。Opus 质量好但额度有限；DeepSeek 通过 Anthropic 兼容接口也能驱动同一个 Claude Code 命令行，几乎不占 Claude 额度。于是问题变成：<b>主对话里的 Claude 应该把哪些活交给 DeepSeek，怎么交，交完怎么验收？</b></p>
-<p>答案写在一个 skill 文件里（<code>delegate-coding/SKILL.md</code>），每次涉及工程的对话开始前必须加载。这篇报告记录这个文件的六次大改，以及支撑每次改动的实测。</p>
-</section>
-
-<section id="iter">
-<h2><span class="n">2</span>六轮迭代</h2>
-<p>点击版本号查看那一版的设计和它是怎么死的。</p>
-<div class="fig">
-  <div class="vt" id="vt"></div>
-  <div class="vcard" id="vcard"></div>
+<section id="vision">
+<h2><span class="n">1</span>两种美好的设想</h2>
+<p>我在 Claude Code 桌面版里做工程。Opus 很好用，但额度有限。DeepSeek 提供 Anthropic 兼容的 API，所以同一条 Claude Code 命令行可以直接跑在 DeepSeek 上，几乎不占我的 Claude 额度。Haiku 又快又便宜。于是就有了两种模式。</p>
+<div class="visions">
+  <div class="vision eco">
+    <div class="vk">设想一</div>
+    <h4>省流模式</h4>
+    <ul>
+      <li>额度吃紧时自动触发（5 小时窗口 ≥80%，或一周 ≥70%）。</li>
+      <li>Haiku 坐镇主对话：只跟我说话、提问、转达。</li>
+      <li>DeepSeek Pro 当总管：拆任务、写规格。</li>
+      <li>DeepSeek Flash 负责执行，另一个 Flash 负责初审。</li>
+      <li>完全不调用 Opus。</li>
+    </ul>
+    <div class="promise">“额度快用完的时候，活儿照跑，Claude 几乎不花钱。”</div>
+  </div>
+  <div class="vision sta">
+    <div class="vk">设想二</div>
+    <h4>稳定工程模式</h4>
+    <ul>
+      <li>额度正常时的默认模式。</li>
+      <li>Opus 只被短暂调用，只做判断：写规格、做终审。</li>
+      <li>Opus 甚至不读代码库——Flash 先给它写一份摘要。</li>
+      <li>所有执行和初审都由 DeepSeek Flash 完成。</li>
+      <li>由脚本闸门判定工作是否“完成”。</li>
+    </ul>
+    <div class="promise">“Opus 只把额度花在判断上。”预计省下 80–90% 的 Claude 额度（相比什么都用 Opus 做）。<i>（从未实测。）</i></div>
+  </div>
 </div>
-
-<h3>复杂度先涨后跌</h3>
-<div class="fig">
-  <div class="controls" id="cxCtl"></div>
-  <div id="cxChart"></div>
-  <div class="cap"><b>图 1</b> 各版本 skill 目录的文件数与总字节数（从归档 <code>.trash</code> 和现行目录实测）。0.4.1 的归档只保留了 SKILL.md，真实规模更大；0.3 无归档，未画。1.0.0 另有 30 条单元测试，全部通过——然后第一次真跑就失败了。</div>
-</div>
+<p>两种设想共用一个当时觉得理所当然的前提：<b>只要盒子画对了、箭头连对了，我们就能把每类工作都路由给负担得起它的最便宜的模型。</b>这份报告剩下的部分，讲的就是这个前提后来怎么样了。</p>
 </section>
 
-<section id="exp">
-<h2><span class="n">3</span>实验</h2>
-<p>所有数字都来自当天的日志、账本和数据表，没有估算值；标“约”的是原始记录里就写着“约”。</p>
+<section id="arch">
+<h2><span class="n">2</span>架构</h2>
+<p>这套设计（“V2”）借鉴了两个相当靠谱的来源：DeepSeek Harness 的 <i>super-agent</i> 模式（前面一个轻量路由器，后面是强力的 worker，异步事件，外加一个看门狗），以及 Anthropic 的 orchestrator–worker 模式（由强模型监督大任务）。点一下某一层，看看每种模式在那一层放了什么——以及后来它们都怎么样了。</p>
+<div class="fig">
+  <div class="lhead"><span>层</span><span style="color:var(--eco)">省流</span><span style="color:var(--sta)">稳定</span></div>
+  <div class="layers" id="layers"></div>
+  <div class="lnote" id="lnote"></div>
+  <div class="comps" id="comps"></div>
+  <div class="cap"><b>图 1。</b>V2 的各层，以及围在它们四周的七个派发／通信组件。这里的一切，都还没在任何真实任务上跑过，就已在纸上推理完毕。</div>
+</div>
+<p>层之上还压着模式开关本身：用一个只报整数百分比的工具读额度，选一档，允许带过期日期的手动覆盖，并在每份计划的第一行打印当前档位——由 hook 强制执行，第一行格式不对的计划会被直接拒绝。</p>
+</section>
 
-<h3>3.1 T0–T3：机制能不能落地</h3>
+<section id="tests">
+<h2><span class="n">3</span>实测</h2>
+<p>这套设计值得夸一句的是，我们真的测了。一天里做了七个实验（T0–T6）。下面所有数字都来自当天的日志、账本和数据表。</p>
+
+<h3>3.1 各个零件都能用（T0–T3）</h3>
 <div class="fig scroll">
 <table>
-<tr><th>编号</th><th>测什么</th><th>结果</th><th>关键证据</th></tr>
-<tr><td>T0</td><td>不带 <code>--bare</code> 的 DeepSeek 能否拉子代理</td><td class="pass">过</td><td>主进程有 Agent 调用，子代理消息带 <code>parent_tool_use_id</code>，调用 id 是 DeepSeek 风格</td></tr>
-<tr><td>T1</td><td>PreToolUse 钩子当路由器</td><td class="pass">过</td><td>主进程 Write 被退出码 2 拦下，子代理放行</td></tr>
-<tr><td>T2</td><td>账本 + 完成闸门</td><td class="pass">过</td><td>验收不过时 <code>status=failed</code>，脚本退出码 1</td></tr>
-<tr><td>T3</td><td>SubagentStop 打回</td><td class="pass">过</td><td>第一次拦下，子代理自己补写文件，第二次放行</td></tr>
+<tr><th>测试</th><th>问题</th><th>结果</th></tr>
+<tr><td>T0</td><td>DeepSeek 的 agent 能自己拉起子代理吗？</td><td class="pass">通过</td></tr>
+<tr><td>T1</td><td>hook 能拦住主对话、不许它自己改文件吗（“结构化路由器”）？</td><td class="pass">通过</td></tr>
+<tr><td>T2</td><td>账本和完成闸门能用吗？</td><td class="pass">通过</td></tr>
+<tr><td>T3</td><td>hook 能把子代理打回去，直到它干完吗？</td><td class="pass">通过</td></tr>
 </table>
-<div class="cap"><b>表 1</b> 四项全过。机制在技术上都能做——这恰恰让我们继续往上加。</div>
+<div class="cap"><b>表 1。</b>四个机制单独拿出来都能用。这正是陷阱：每一块都可行，让人误以为整体已经验证过了。</div>
 </div>
 
-<h3>3.2 T4：谁来写规格？两条路线对比</h3>
-<p>同一道题（任务队列收尾逻辑），路线 A 由 DeepSeek Pro 写规格，路线 B 由 Opus 写规格；执行和初审都是 Flash，终审都是 Opus。另有 5 个隐藏验收用例。</p>
+<h3>3.2 稳定工程模式，端到端（T4）</h3>
+<p>一道真实的题（任务队列的收尾逻辑），两条路线。A：DeepSeek Pro 写规格。B：Opus 根据 Flash 的摘要写规格。两条路线相同的部分：Flash 执行，Flash 初审，Opus 终审。另外单独写了五个隐藏验收测试。</p>
 <div class="fig">
   <div class="controls" id="t4Ctl"></div>
   <div class="legend" id="t4Leg"></div>
   <div id="t4Chart"></div>
-  <div class="cap"><b>图 2</b> T4 每一步的耗时或 DeepSeek 费用（悬停看详情）。Opus 步骤按 token 计费，不在美元费用图里。<b>两条路线都被 Opus 终审打回返工</b>，而隐藏验收在每个版本上都是 5/5——测试全绿，问题是终审看出来的。</div>
-</div>
-<div class="fig scroll">
-<table>
-<tr><th>合计</th><th>A：Pro 写规格</th><th>B：Opus 写规格</th></tr>
-<tr><td>返工轮数</td><td>2</td><td>1</td></tr>
-<tr><td>DeepSeek 时间</td><td>1,118 秒</td><td>689 秒</td></tr>
-<tr><td>DeepSeek 费用</td><td>$2.89</td><td>$1.43</td></tr>
-<tr><td>Opus 输出 token</td><td>3,400</td><td>11,250</td></tr>
-<tr><td>最终测试</td><td>153 OK</td><td>149 OK</td></tr>
-<tr><td>改动量</td><td>+572 / −26</td><td>+381 / −24</td></tr>
-</table>
-<div class="cap"><b>表 2</b> 结论：写规格的是谁不关键，<b>终审才是兜底的那一层</b>。注意只测了一道题。</div>
+  <div class="cap"><b>图 2。</b>T4 的每一步（悬停看详情）。<b>两条路线都被 Opus 的终审打了回来</b>，而隐藏测试在每个版本上都是 5/5 全过。流水线的层层关卡给出了全绿的测试；唯一一个自由阅读的强审查者找出了 bug。路线 A 耗时 1,118 秒，DeepSeek 花费 $2.89；路线 B 耗时 689 秒，花费 $1.43。Claude 额度表只显示整数百分比，两次 Opus 调用期间都没有动，所以<b>承诺的 80–90% 节省根本没法测量</b>。</div>
 </div>
 
-<h3>3.3 T5：Flash 还是 Pro？</h3>
+<h3>3.3 执行这种活，Flash 足够了（T5）</h3>
 <div class="fig">
-  <div class="legend"><span><i style="background:var(--c1)"></i>Flash</span><span><i style="background:var(--c2)"></i>Pro</span><span><i style="background:var(--bad)"></i>脚手架误拦（非模型问题）</span></div>
+  <div class="legend"><span><i style="background:var(--c1)"></i>Flash</span><span><i style="background:var(--c2)"></i>Pro</span><span><i style="background:var(--bad)"></i>脚手架误报</span></div>
   <div id="t5Chart"></div>
-  <div class="cap"><b>图 3</b> 3 道题 × 2 个模型 × 2 次，共 12 次正式运行（账本时间戳相减）。验收命令 <b>0 次误拦</b>；唯一一次失败来自闸门配置，重跑即过。Flash 平均 <b>19 秒</b>，Pro 平均 <b>55 秒</b>，全部通过验收。</div>
+  <div class="cap"><b>图 3。</b>3 个小任务 × 2 个模型 × 2 次运行：12/12 通过。Flash 平均 19 秒，Pro 平均 55 秒。唯一那次失败是闸门自己的配置问题，不是模型的问题。一个少见的干净结果——而且它支持的是<i>砍掉</i>一层（Pro），不是加一层。</div>
 </div>
 
-<h3>3.4 T6：DeepSeek 停不下来</h3>
-<p>让 Opus 子代理和 DeepSeek Flash 分别对同一份需求“拷问”Kurt，直到定稿。</p>
+<h3>3.4 该由谁来动脑子？（T6）</h3>
+<p>规划和“拷问”（就需求对我做访谈）都在主对话里进行——而在省流模式下主对话是 Haiku，于是设计判断力恰好在最需要它的地方变弱了。修法是再加一层：Haiku 负责转达，由 Opus 子代理或 DeepSeek 来提问。</p>
 <div class="fig">
   <div id="t6Chart"></div>
-  <div class="cap"><b>图 4</b> 左右分别归一化到较大者。DeepSeek 把“最多问 4 个”理解成“必须问满 4 个”，问到第 6 轮还在问（第 5 轮的 4 题被误触拒绝后才定稿），还自己推出了一条 Kurt 没确认过的规则。<b>方案质量至今没打分</b>，所以这里只说明一件事：<b>停止不能靠执行者自觉</b>。</div>
+  <div class="cap"><b>图 4。</b>DeepSeek 把“最多问 4 个问题”读成了“每次必问 4 个”，问到第 6 轮还没停。负责转达的 Haiku 把一个问题的标题写错了。而这个测试里要设计的对象本身又是更多架构：一个用来校验每份计划顶部额度行的 hook，配一张 13 项的测试清单。两版设计最后都没有被打分。</div>
+</div>
+</section>
+
+<section id="patch">
+<h2><span class="n">4</span>补丁摞补丁</h2>
+<p>每个测试都暴露一个问题。每个问题都用同一种方式回应：加一个新机制。一步步看补丁日志。</p>
+<div class="fig">
+  <div class="pctl"><button class="tab" id="pPrev">← 上一步</button><button class="tab" id="pNext" aria-pressed="true">下一个补丁 →</button><button class="tab" id="pAll">显示全部</button><span class="cnt" id="pCnt"></span></div>
+  <div class="plog" id="plog"></div>
+  <div class="cap"><b>图 5。</b>问题（左）→ 补丁（右）。注意看：补丁常常是<i>关于模型行为</i>的一条新规则，而下一个问题又常常是上一个补丁造成的。</div>
 </div>
 
-<h3>3.5 1.0.0 的真实第一单</h3>
+<h3>机制是怎么堆起来的</h3>
+<p>选一个版本。划掉的是已删除的，描边的是该版本新增的，红色圆点表示这个机制从未在真实任务上测过，或从未上线。</p>
+<div class="fig">
+  <div class="vbar" id="vbar"></div>
+  <div id="mchart" style="margin-bottom:18px"></div>
+  <div class="board" id="board"></div>
+  <div class="vsum" id="vsum"></div>
+  <div class="cap"><b>图 6。</b>派发规则各个版本里存活的机制，根据归档的规则文件和设计笔记整理。数量是近似值——什么算一个“机制”本身就有判断空间——但整体形状不是。</div>
+</div>
+</section>
+
+<section id="who">
+<h2><span class="n">5</span>你在跟谁说话？</h2>
+<p>到 v0.5，主对话已经被压缩成纯粹的转达。它的全部工作就是：把我的话交给新开的 Opus 总管，把总管的回答带回来，自己从不动脑。任何工程或项目类请求——<i>哪怕只是一个问题</i>——都必须转发。没有“小事”例外（早先的一个例外让 Haiku 可以悄悄自己干活）。</p>
+<p>它失败的原因听起来微不足道，事后看却是致命的。你来当一次转达者试试。下面每条消息都可能是我会发的；其中两条是我真实发给 Haiku 会话的话。</p>
+<div class="fig">
+  <div class="quiz" id="quiz"></div>
+  <div class="cap"><b>图 7。</b>没有正确的那一栏。每条消息都可以有两种读法。</div>
+</div>
+<p>规则说“不要判断”，可<b>“这条该不该转发”本身就是判断</b>——而规则把这件事交给了系统里最弱的模型。hook 可以阻止模型<i>去做</i>某件事（T1 已经证明了）；但它拦不住模型<i>该转发而不转发</i>，也拦不住它在压缩时丢掉意思。转达也没有省下什么：每个新总管都要重读一遍上下文；而当主对话本来就是 Opus 时，再开一个 Opus 总管纯属重复。用了一阵之后，我的评价很直白：Haiku 干不了这个活。但换一个更强的转达者，也只是把缺陷藏起来：架构已经把守门人变成了意图路由器，而意图是整段对话里最难判断的东西。</p>
+</section>
+
+<section id="down">
+<h2><span class="n">6</span>把它拆掉</h2>
+<p>v1.0 又试了一次，做减法：按主对话当前跑的模型分档；Haiku 只需要把消息分进三个筐（改代码 / 问项目 / 闲聊）；脚本负责写任务卡、跑闸门，最多三轮就停。它有 30 个单元测试，全绿。</p>
 <div class="fig">
   <div id="v1Chart"></div>
-  <div class="cap"><b>图 5</b> 一道“加一个 <code>sub</code> 函数”的小题。1.0.0：写卡的 Flash 照抄了一条需要 <code>tests/__init__.py</code> 的测试命令，卡里又写着“不许加 <code>__init__.py</code>”。第 1 轮验收失败；第 2 轮补了文件，验收过了，却被闸门判越界；第 3 轮卡住，被手动停掉。2.0.0（删掉闸门、验收命令、多轮）同一道题 <b>7 轮、11 秒</b>完成。</div>
+  <div class="cap"><b>图 8。</b>v1.0 的第一单真实任务——加一个 <code>sub</code> 函数。写卡的模型抄来了一条需要 <code>tests/__init__.py</code> 的测试命令；同一张卡又禁止添加 <code>__init__.py</code>。第 1 轮：验收失败。第 2 轮：文件加上了，验收通过，闸门却判它越界。第 3 轮：卡住，被手动终止。两项检查互相矛盾，再能干的执行者也没法同时满足。</div>
 </div>
-
-<h3>3.6 2.1.0：把子代理找回来（今天）</h3>
-<p>同一个只读冒烟任务：“用子代理读 AGENTS.md 返回第一行，再试着写一个文件（应被拒）。”点步骤看每次改了什么。</p>
+<p>架构到此为止。v2.0 删掉了闸门、验收命令、返工轮次、写卡步骤、账本、模板、测试和转达层。同一个任务，<b>7 轮、11 秒</b>做完。</p>
+<div class="fig scroll">
+<table>
+<tr><th></th><th style="color:var(--eco)">省流：承诺</th><th style="color:var(--eco)">省流：现在</th></tr>
+<tr><td>主对话</td><td>Haiku 转给一个 DeepSeek Pro 总管</td><td>Haiku 聊天；遇到工程请求，把我的原话一字不改地塞进一条命令，再原样转达回复</td></tr>
+<tr><td>检查</td><td>闸门 + Flash 初审 + Pro 终审</td><td>没有了——我自己看结果</td></tr>
+<tr><th></th><th style="color:var(--sta)">稳定：承诺</th><th style="color:var(--sta)">稳定：现在</th></tr>
+<tr><td>Opus</td><td>短暂调用，写规格和终审；从不读代码</td><td>直接干活；能交给 DeepSeek 的就交；自己读 diff</td></tr>
+<tr><td>执行</td><td>Flash，跑在带闸门和沙箱的流水线里</td><td>Flash，带着完整工具集，一个 80 轮的上限</td></tr>
+<tr><td>节省</td><td>80–90%（估计）</td><td>未知（额度表看不出来）</td></tr>
+</table>
+<div class="cap"><b>表 2。</b>两种设想都活了下来——作为意图，而不是架构。整套规则现在一屏就能放下，外加一个约 90 行的脚本。</div>
+</div>
 <div class="fig">
-  <div class="controls" id="smCtl"></div>
-  <div id="smChart"></div>
-  <div class="cap" id="smCap"></div>
+  <div class="controls" id="cxCtl"></div>
+  <div id="cxChart"></div>
+  <div class="cap"><b>图 9。</b>各版本规则目录的大小（来自归档副本）。v0.4.1 的归档只保留了主规则文件，所以它的真实体积更大。当前版本是峰值的 14%。</div>
 </div>
+<p class="aside"><b>最后一点讽刺。</b>活下来的那个脚本，启动 DeepSeek 时仍带着 <code>--bare</code> 这个“隔离”标志，它会悄悄把 agent 削到只剩三个工具，并剥夺它拉起子代理的能力。T0 早就发现了这一点，还写进了两份笔记。没有人回去重读那两份笔记；这个限制被当成 DeepSeek 的固有事实记了下来。直到我问了一句为什么，它才被修掉。就连这次简化，也继承了一小片挡在模型路上的旧架构。</p>
 </section>
 
-<section id="forgot">
-<h2><span class="n">4</span>被忘了三次的事</h2>
-<p>这篇报告最该被记住的部分不是哪张图，而是这条时间线。</p>
-<div class="fig">
-<div class="ft">
-  <div class="ev"><div class="d">11-09 · 探针</div>显式允许 7 个工具（含 Agent），DeepSeek 只看到 Bash、Edit、Read 三个。报告写了“7 个只看到 3 个”，<b>没解释</b>。</div>
-  <div class="ev ok"><div class="d">11-12 上午 · T0</div>查清原因：<code>--bare</code> 模式只给三个工具，还会把 <code>CLAUDE_CODE_SIMPLE=1</code> 传给下一层。去掉 <code>--bare</code> 后子代理能拉起，也确实跑在 DeepSeek 上。写进了两份笔记。</div>
-  <div class="ev bad"><div class="d">11-12 中午 · 2.0.0</div>大简化时，新脚本又写回了 <code>--bare</code>，SKILL.md 里还认真记了一句“拉不起子代理”——把一个可修的限制当成了既定事实。笔记里甚至写着“普通任务继续用 --bare”。</div>
-  <div class="ev bad"><div class="d">11-12 下午 · 2.1.0 第 1、2 次尝试</div>Kurt 问“为什么还不能拉子代理”。先把 Agent 加进允许名单——没用；再用 <code>--tools</code> 显式列工具——还是没用，连 Glob、Grep 都没有。</div>
-  <div class="ev ok"><div class="d">11-12 下午 · 2.1.0</div>去掉 <code>--bare</code>，改用独立配置目录 + <code>--strict-mcp-config</code> 隔离。子代理成功；顺手发现只读模式其实拦不住写文件（acceptEdits 会自动放行），一并修掉。</div>
-</div>
-</div>
-<p>答案在 T0 里已经有了，笔记也写了两份。可是做 2.0.0 的那一轮对话没有去读它，新脚本是照着旧脚本改的，旧脚本里就带着 <code>--bare</code>。<b>写下来的经验只在有人读的时候才算数；真正能保住它的，是写进会被执行的东西里</b>——所以 2.1.0 把原因写成了脚本里紧挨着那一行的注释。</p>
-</section>
-
-<section id="concl">
-<h2><span class="n">5</span>结论：Kurt's Bitter Lesson</h2>
-<div class="quote">不要想太多架构。它很可能在妨碍强模型；你设计的流程，也很可能是没人验证过的空想。</div>
-<p>Rich Sutton 的 <i>The Bitter Lesson</i> 说，长期看，依靠通用计算的方法总会赢过人手编进去的领域知识。我们在一个小得多的尺度上，花一天时间把这件事亲身走了一遍。归结起来是两个论点。</p>
-
+<section id="lesson">
+<h2><span class="n">7</span>教训</h2>
+<div class="quote">不要想太多架构。它很有可能对强模型是妨碍；流程设计在纸上再合理，也很有可能是未经验证的空想。</div>
+<p>Rich Sutton 的 <i>The Bitter Lesson</i> 指出：长远来看，利用算力的通用方法，会赢过人手编码进去的人类知识。这一次，是同一个小尺度、一天、一个人的翻版。</p>
 <div class="claims">
   <div class="claim">
     <div class="ck">论点一</div>
-    <h4>架构在妨碍强模型</h4>
-    <p>我们每加一层，都在收窄强模型能看到、能做的东西。</p>
+    <h4>架构会妨碍强模型</h4>
     <ul>
-      <li>路线 B 里，Opus 写规格看的是 <i>Flash 写的摘要</i>，不是代码——架构让最强的模型用最弱的模型的视角干活。</li>
-      <li>闸门和验收命令互相矛盾，能干的执行者怎么做都过不了（图 5）。</li>
-      <li>为了“隔离”用的 <code>--bare</code>，悄悄拿走了子代理——恰恰是让模型自己组织工作的那项能力（图 6）。</li>
-      <li>传话层让 Haiku 去猜意图，而不是直接回答。</li>
-      <li>真正抓到 bug 的，是结构的反面：一个强模型自由地读 diff（图 2）。</li>
+      <li>Opus 写规格时拿到的是 Flash 的摘要，而不是代码：设计把最弱模型的视角喂给了最强的模型。</li>
+      <li>两项检查（闸门和验收命令）互相矛盾；没有哪个执行者能同时通过。</li>
+      <li>转达层把 Haiku 变成了意图路由器——偏偏是它做不了的那件事。</li>
+      <li>一个“隔离”标志悄悄拿走了 agent 自己组织工作的能力。</li>
+      <li>真正抓到 bug 的，是结构的反面：一个强模型自由地读 diff。</li>
     </ul>
   </div>
   <div class="claim">
     <div class="ck">论点二</div>
-    <h4>流程设计常常是未经验证的空想</h4>
-    <p>我们搭的大部分东西，理由是推理，而不是它真的挡住过哪次失败。</p>
+    <h4>流程设计往往是没人验证过的臆测</h4>
     <ul>
-      <li>V2 有一份 37 项的设计清单，只有少数几项在 T0–T6 实验里碰到过。</li>
-      <li>额度 80% / 70% 的切档阈值是拍的，没验证过。</li>
-      <li>闸门在真实派单里的拦截率从没测过——在测之前就删了。</li>
-      <li>30 条单元测试证明的是机制能跑，不是机制有用；真跑第一单就失败。</li>
-      <li>“谁写规格”的分档决定只基于一道题。</li>
+      <li>80% / 70% 这两个阈值是拍脑袋定的，从未验证。</li>
+      <li>80–90% 的节省是个估计，额度表永远确认不了。</li>
+      <li>闸门真正的拦截率，在它被删掉之前从未测过。</li>
+      <li>路由器 hook、看门狗、loop 模式、档位覆盖和计划头 hook，都设计了，但从未上线。</li>
+      <li>30 个单元测试只证明了机器能转，没证明它有用；第一单真实任务就失败了。</li>
     </ul>
   </div>
 </div>
-
 <div class="fig">
   <h4 style="margin:0 0 6px;font:600 16px var(--sans)">那该怎么做</h4>
   <ol style="margin:0;padding-left:20px">
-    <li>从最简单的开始：把任务和完整的工具交给模型。</li>
-    <li>加一条由脚本强制的硬上限（轮数），而不是一条要模型记住的规则。</li>
-    <li>真跑一单。只有当一次真实失败本可以被某个机制挡住时，才加这个机制——并且测量它。</li>
-    <li>保留一次强模型的独立检查；其余的，等数据说话再加。</li>
+    <li>从最简单的做起：把任务和完整工具集交给一个足够强的模型。</li>
+    <li>把少数硬性限制放进脚本（一个轮数上限），而不是写成要求模型记住的规则。</li>
+    <li>先跑一单真实任务，再考虑加东西。只有当某次真实失败本来会被某个机制挡住时，才加这个机制——并且测量它。</li>
+    <li>保留一次由强模型做的独立审查。其余的都先别加，等数据开口。</li>
+    <li>别让弱模型去判断用户到底是什么意思。</li>
   </ol>
 </div>
-
-<h3>支撑两个论点的七条观察</h3>
-<p style="color:var(--ink2)">点开每条看证据。</p>
-<ol class="lessons" id="lessons"></ol>
 </section>
 
 <section id="limit">
-<h2><span class="n">6</span>局限</h2>
+<h2><span class="n">局限</span></h2>
 <ul>
-<li>样本很小：T4 只有一道题，T5 是 3 道题各 2 次，T6 没有打分。任何“Flash 比 Pro 好”“Opus 写规格更省”的说法都只是暂定。</li>
-<li>所有实验都在一台 Windows 机器、同一天、同一个人身上完成；没测并发、长任务和超时看门狗。</li>
-<li>额度百分比只有整数，单次 Opus 调用的成本看不出来，所以“省了多少 Claude 额度”没有可靠数字。</li>
-<li>闸门在真实派单里的拦截率和误拦率从没测过——在测之前它就被删了。</li>
-<li>2.1.0 去掉 <code>--bare</code> 后，DeepSeek 会读到项目自己的 CLAUDE.md / AGENTS.md；这被当成好事，但长期影响没观察。</li>
+<li>样本很小：T4 只有一道题，T5 是三个小任务各跑两次，T6 从未打分。</li>
+<li>一个人、一台 Windows 机器、实际上只有一天。并发和长任务从未测过。</li>
+<li>Claude 额度表只报整数百分比，所以任何关于 Claude 花费的说法——无论支持还是反对两种设想——都没有数据支撑。</li>
+<li>Haiku 是否能稳定遵守哪怕现行这套最简的省流规则，也没有正式测过。</li>
+<li>图 6 里的机制数量是根据归档文件和笔记重建的；换个人来数，结果可能不一样。</li>
 </ul>
 </section>
 
-<section id="appx">
-<h2><span class="n">附录</span>现行规则（2.1.0）摘要</h2>
-<div class="fig scroll">
-<table>
-<tr><th>场景</th><th>做法</th></tr>
-<tr><td>主对话是 Opus（稳定档）</td><td>能交给 DeepSeek 就交，自己只做一两步的小事、要用 MCP/浏览器/Artifact 的活、要来回商量的设计决定；DeepSeek 做完由 Opus 看 diff 和测试</td></tr>
-<tr><td>主对话是 Haiku（省流档）</td><td>只聊天；工程请求把原话写进任务文件，跑派发命令，结果原样转达</td></tr>
-<tr><td>派发脚本</td><td>一个 PowerShell 脚本：剥掉继承的 Claude 环境变量、指向 DeepSeek、独立配置目录、80 轮封顶、打印最终回复</td></tr>
-<tr><td>权限</td><td>dev：全部基础工具 + 子代理，禁网络、禁 push、禁删目录等；strict：只读 + 子代理，显式禁 Edit/Write</td></tr>
-<tr><td>停止</td><td>只靠 <code>--max-turns</code>，不靠模型说“做完了”</td></tr>
-</table>
-</div>
-<p style="color:var(--ink3);font-size:13px">被删掉的机制：额度切档、Flash 代码摘要、规格写手、Flash 初审、Opus 短命总管、闸门（GATE-ACCEPT / GATE-ALLOW）、账本、副本隔离、多轮返工、写卡步骤、模板、30 条单元测试、Haiku 传话层。</p>
-</section>
-
 <footer>
-Kurt's Bitter Lesson · 2026-11-12 · 数据来源：复盘笔记 <code>dispatch-v2-lessons.md</code>、T4 数据表、T5 账本 <code>ledger.jsonl</code>、T0–T3 与 T6 实测记录、当天冒烟测试输出。单文件，无外部依赖。
+Kurt's Bitter Lesson · 2026-11-12 · 来源：归档的规则文件（v0.4.1–v1.0.0）、V2 设计草稿、复盘笔记、T4 数据表、T5 账本、T0–T3 与 T6 的记录。单文件，无外部依赖。 · <a href="index.html" style="color:inherit">English</a>
 </footer>
 </div>
 
 <script>
 (function(){
 const $=s=>document.querySelector(s);
-const css=v=>`var(${v})`; // live CSS var, so charts follow the theme without redrawing
-const tip=$('#tip');
-function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;moveTip(e)}
-function moveTip(e){const x=Math.min(e.clientX+14,innerWidth-290);tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
-function hideTip(){tip.style.opacity=0}
-function el(tag,attrs,parent){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in attrs){const v=String(attrs[k]);if((k==='fill'||k==='stroke')&&v.startsWith('var('))n.style[k]=v;else n.setAttribute(k,v)}if(parent)parent.appendChild(n);return n}
-// direct node.setAttribute('fill', 'var(--x)') calls below also need to go through style
+const css=v=>`var(${v})`;
 const _sa=SVGElement.prototype.setAttribute;
 SVGElement.prototype.setAttribute=function(k,v){if((k==='fill'||k==='stroke')&&String(v).startsWith('var(')){this.style[k]=v;return}return _sa.call(this,k,v)};
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;tip.style.left=Math.min(e.clientX+14,innerWidth-300)+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.style.opacity=0}
+function el(tag,attrs,parent){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n}
 function svg(w,h){return el('svg',{viewBox:`0 0 ${w} ${h}`,role:'img'})}
-function hover(node,html){node.style.cursor='default';node.addEventListener('mousemove',e=>showTip(e,html));node.addEventListener('mouseleave',hideTip);node.addEventListener('touchstart',e=>{showTip(e.touches[0],html)},{passive:true})}
+function hover(node,html){node.addEventListener('mousemove',e=>showTip(e,html));node.addEventListener('mouseleave',hideTip);node.addEventListener('touchstart',e=>showTip(e.touches[0],html),{passive:true})}
+function txt(s,attrs,str){const t=el('text',attrs,s);t.textContent=str;return t}
 function tabs(ctl,items,onPick,init){ctl.innerHTML='';items.forEach((it,i)=>{const b=document.createElement('button');b.className='tab';b.textContent=it.label;b.setAttribute('aria-pressed',i===init);b.onclick=()=>{[...ctl.children].forEach(c=>c.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');onPick(it,i)};ctl.appendChild(b)});onPick(items[init],init)}
+document.addEventListener('touchstart',e=>{if(!e.target.closest('svg'))hideTip()},{passive:true});
 
-/* ---------- versions ---------- */
-const V=[
- {v:'0.3',d:'及以前',title:'Haiku 主对话 + 三模式表',dead:true,
-  what:['主对话固定 Haiku，只对话、转交、汇总、轻量验收','按额度 60% 阈值切普通 / 省流；另有手动“全量模式”','验收靠主对话看 git diff，需要时弹窗建议升 Opus'],
-  why:'模式和阈值越来越多，规则本身成了要维护的东西。'},
- {v:'0.4',d:'V2 流水线',title:'摘要 → 规格 → 执行 → 初审 → 终审',dead:true,
-  what:['额度 ≥80%（5 小时）或 ≥70%（周）进省流档','Flash 写代码摘要，Opus 只看摘要写规格','Flash 执行 + Flash 初审，Opus 终审；闸门是唯一完成检查','返工最多一轮，在副本里做（防看到旧答案）'],
-  why:'T4 实测：规格谁写差别不大，终审最有价值；整条链太长，每次都要重读上下文。'},
- {v:'0.5',d:'传话层',title:'Haiku 只传话，Opus 当总管',dead:true,
-  what:['主对话只把工程请求压缩后转给新开的 Opus 总管','13 个文件：流水线、闸门、副本脚本、6 份提示词模板'],
-  why:'Haiku 分不清 Kurt 是在跟它说话还是要它转出去——“该不该转”本身就是判断，而规则禁止它判断。'},
- {v:'1.0',d:'分档 + 闸门',title:'按主对话模型分档，脚本强制停',dead:true,
-  what:['Opus 稳定档：自己做，大任务写卡派 Flash','Haiku 省流档：一条命令先写卡再执行','dispatch.ps1：写卡、闸门、最多 3 轮；30 条单元测试全过'],
-  why:'真跑第一单：验收命令需要 __init__.py，卡里又禁止加它。三轮耗光，被手动停掉。'},
- {v:'2.0',d:'大砍',title:'一个 skill + 一个脚本',dead:true,
-  what:['删掉闸门、验收命令、多轮返工、写卡、账本、模板、全部测试','脚本只负责启动 DeepSeek、80 轮封顶、打印回复','检查交还主对话：Opus 自己看 diff'],
-  why:'方向对了，但脚本带着 --bare，子代理没了，还被记成“DeepSeek 的限制”。'},
- {v:'2.1',d:'现行',title:'能交给 DeepSeek 就交',dead:false,
-  what:['稳定档从“大任务才派”改成“能派就派”','去掉 --bare，用独立配置目录 + --strict-mcp-config 隔离','允许 Agent 工具；只读档显式禁 Edit/Write','冒烟测试：子代理成功、只读写入被拒、dev 子代理写文件成功'],
-  why:''}
-];
-const vt=$('#vt'),vc=$('#vcard');
-function showV(i){const x=V[i];[...vt.children].forEach((b,j)=>b.setAttribute('aria-pressed',i===j));
- vc.innerHTML=`<h4>${x.v} · ${x.title}<span class="tag ${x.dead?'dead':'live'}">${x.dead?'已废弃':'在用'}</span></h4><ul>${x.what.map(w=>`<li>${w}</li>`).join('')}</ul>${x.why?`<p style="margin-top:10px"><b>${x.dead?'为什么死：':''}</b>${x.why}</p>`:''}`}
-V.forEach((x,i)=>{const b=document.createElement('button');b.innerHTML=`${x.v}<small>${x.d}</small>`;b.onclick=()=>showV(i);vt.appendChild(b)});
-showV(5);
-
-/* ---------- complexity ---------- */
-const CX=[{v:'0.4.1',files:1,bytes:7111,note:'归档只存了 SKILL.md'},{v:'0.5.0',files:13,bytes:23552},{v:'1.0.0',files:13,bytes:65288,note:'另含 30 条测试'},{v:'2.0.0',files:3,bytes:8028},{v:'2.1.0',files:3,bytes:9247}];
-function drawCx(key){const W=640,H=250,L=56,B=34,T=14,R=10,s=svg(W,H);const box=$('#cxChart');box.innerHTML='';box.appendChild(s);
- const max=Math.max(...CX.map(d=>d[key]))*1.12;const bw=(W-L-R)/CX.length;
- for(let g=0;g<=4;g++){const y=T+(H-T-B)*g/4;el('line',{x1:L,x2:W-R,y1:y,y2:y,class:'axis'},s);const t=el('text',{x:L-8,y:y+4,'text-anchor':'end'},s);const val=max*(1-g/4);t.textContent=key==='bytes'?(val/1000).toFixed(0)+'K':val.toFixed(0)}
- CX.forEach((d,i)=>{const h=(H-T-B)*d[key]/max,x=L+i*bw+bw*.22,w=bw*.56,y=H-B-h;
-  const r=el('rect',{x,y,width:w,height:h,rx:4,fill:d.v==='2.1.0'?css('--accent'):(d.v==='1.0.0'?css('--bad'):css('--c1')),opacity:d.v==='0.4.1'?.45:1},s);
-  hover(r,`<b>${d.v}</b><br>${d.files} 个文件 · ${d.bytes.toLocaleString()} 字节${d.note?'<br>'+d.note:''}`);
-  const lb=el('text',{x:x+w/2,y:H-B+18,'text-anchor':'middle'},s);lb.textContent=d.v;
-  const vl=el('text',{x:x+w/2,y:y-6,'text-anchor':'middle'},s);vl.textContent=key==='bytes'?(d.bytes/1000).toFixed(1)+'K':d.files;});
-}
-tabs($('#cxCtl'),[{label:'总字节数',k:'bytes'},{label:'文件数',k:'files'}],it=>drawCx(it.k),0);
+/* ---------- architecture layers ---------- */
+const LY=[
+ ['路由器（主对话）','Haiku','Haiku（讨论设计时用 Opus）','本应只负责说话、派发和转达。结果成了最弱的一环：它必须判断哪些话该转发（第 5 节）。'],
+ ['判断','DeepSeek Pro 起草，我来定','短命的 Opus，只读 Flash 的摘要','写规格和终审。T4：写规格的人其实关系不大；真正抓到 bug 的是终审——前提是 Opus 能自由阅读。'],
+ ['执行','DeepSeek Flash','DeepSeek Flash','唯一一个正常工作的层（T5：12/12）。它原封不动地活了下来。'],
+ ['初审','另一个 Flash，≤80 行','另一个 Flash，≤80 行','一个“有条件通过”接一个“有条件通过”，从不做决定。已删除。'],
+ ['升级','Pro，然后停下问我','直接找 Opus','由“闸门连续失败两次”触发——而在 v1.0 里，这件事发生的原因是闸门自己自相矛盾。'],
+ ['安全网','账本、闸门、看门狗','账本、闸门、看门狗','账本和闸门上线后又被删了；看门狗从未被造出来。']];
+const lw=$('#layers'),ln=$('#lnote');
+LY.forEach((r,i)=>{const d=document.createElement('div');d.className='layer';d.innerHTML=`<div class="ln">${r[0]}</div><div class="le">${r[1]}</div><div class="ls">${r[2]}</div>`;d.onclick=()=>pickL(i);lw.appendChild(d)});
+function pickL(i){[...lw.children].forEach((c,j)=>c.classList.toggle('on',i===j));ln.innerHTML=`<b>${LY[i][0]}：</b> ${LY[i][3]}`}
+pickL(0);
+$('#comps').innerHTML=['任务卡','异步完成事件','账本','完成闸门','结构化路由器 hook','看门狗','手机屏幕能看完的回复'].map(c=>`<span>${c}</span>`).join('');
 
 /* ---------- T4 ---------- */
 const T4=[
  {r:'A',s:'A1 规格',who:'Pro',sec:374,usd:1.322,res:'120 行，2 条覆盖路径'},
- {r:'A',s:'A2 执行',who:'Flash',sec:89,usd:.128,res:'闸门一次过，145 tests OK'},
- {r:'A',s:'A3 初审',who:'Flash',sec:96,usd:.195,res:'有条件通过（高 1、中 2）'},
- {r:'A',s:'A4 终审',who:'Opus',sec:39,usd:null,res:'返工：先公布后清理（规格带入）'},
- {r:'A',s:'A6 返工',who:'Flash',sec:163,usd:.334,res:'150 tests OK'},
- {r:'A',s:'A7 初审',who:'Flash',sec:107,usd:.25,res:'_finalizing 撞 remove_task 留僵尸'},
- {r:'A',s:'A8 再修',who:'Flash',sec:178,usd:.412,res:'153 tests OK'},
- {r:'A',s:'A8 初审',who:'Flash',sec:111,usd:.252,res:'有条件通过，剩 2 个中等问题'},
- {r:'B',s:'B1 摘要',who:'Flash',sec:219,usd:.469,res:'194 行'},
+ {r:'A',s:'A2 执行',who:'Flash',sec:89,usd:.128,res:'闸门通过，145 个测试 OK'},
+ {r:'A',s:'A3 初审',who:'Flash',sec:96,usd:.195,res:'有条件通过（高 1，中 2）'},
+ {r:'A',s:'A4 终审',who:'Opus',sec:39,usd:null,rework:true,res:'返工：先发布后清理（从规格继承）'},
+ {r:'A',s:'A6 返工',who:'Flash',sec:163,usd:.334,res:'150 个测试 OK'},
+ {r:'A',s:'A7 初审',who:'Flash',sec:107,usd:.25,res:'_finalizing 与 remove_task 竞争 → 僵尸任务'},
+ {r:'A',s:'A8 修复',who:'Flash',sec:178,usd:.412,res:'153 个测试 OK'},
+ {r:'A',s:'A8 初审',who:'Flash',sec:111,usd:.252,res:'有条件通过，还剩 2 个中等问题'},
+ {r:'B',s:'B1 摘要',who:'Flash',sec:219,usd:.469,res:'给 Opus 的 194 行代码摘要'},
  {r:'B',s:'B2 规格',who:'Opus',sec:94,usd:null,res:'121 行，5 条覆盖路径'},
- {r:'B',s:'B3 执行',who:'Flash',sec:136,usd:.232,res:'147 tests OK'},
+ {r:'B',s:'B3 执行',who:'Flash',sec:136,usd:.232,res:'147 个测试 OK'},
  {r:'B',s:'B4 初审',who:'Flash',sec:124,usd:.261,res:'有条件通过（中 4）'},
- {r:'B',s:'B5 终审',who:'Opus',sec:25,usd:null,res:'返工：_failing 泄漏、缺 try/finally'},
- {r:'B',s:'B6 返工',who:'Flash',sec:95,usd:.205,res:'149 tests OK'},
- {r:'B',s:'B 初审',who:'Flash',sec:115,usd:.263,res:'清理异常吞掉失败结局（中高）'}];
+ {r:'B',s:'B5 终审',who:'Opus',sec:25,usd:null,rework:true,res:'返工：_failing 泄漏，缺少 try/finally'},
+ {r:'B',s:'B6 返工',who:'Flash',sec:95,usd:.205,res:'149 个测试 OK'},
+ {r:'B',s:'B 初审',who:'Flash',sec:115,usd:.263,res:'清理阶段的异常吞掉了失败结局（中高）'}];
 const whoC={Pro:'--c2',Flash:'--c1',Opus:'--c4'};
-$('#t4Leg').innerHTML=['Flash','Pro','Opus'].map(w=>`<span><i style="background:var(${whoC[w]})"></i>${w}</span>`).join('')+'<span>⟲ = 终审打回</span>';
-function drawT4(key){const box=$('#t4Chart');box.innerHTML='';const rowH=22,L=78,R=60,W=640,H=T4.length*rowH+34,s=svg(W,H);box.appendChild(s);
- const vals=T4.map(d=>d[key]||0),max=Math.max(...vals);
+$('#t4Leg').innerHTML=['Flash','Pro','Opus'].map(w=>`<span><i style="background:var(${whoC[w]})"></i>${w}</span>`).join('')+'<span>⟲ = 被终审打回</span>';
+function drawT4(key){const box=$('#t4Chart');box.innerHTML='';const rowH=22,L=84,R=60,W=640,H=T4.length*rowH+34,s=svg(W,H);box.appendChild(s);
+ const max=Math.max(...T4.map(d=>d[key]||0));
  T4.forEach((d,i)=>{const y=10+i*rowH+(d.r==='B'?12:0);const v=d[key];
-  const t=el('text',{x:L-8,y:y+14,'text-anchor':'end'},s);t.textContent=d.s;
-  if(v==null){const n=el('text',{x:L+4,y:y+14},s);n.textContent='（按 token 计）';n.setAttribute('opacity',.6);return}
+  txt(s,{x:L-8,y:y+14,'text-anchor':'end'},d.s);
+  if(v==null){txt(s,{x:L+4,y:y+14},'（Opus，按 token 计费）'+(d.rework?'  ⟲':'')).setAttribute('opacity',.7);return}
   const w=(W-L-R)*v/max;const r=el('rect',{x:L,y:y+3,width:Math.max(w,2),height:rowH-8,rx:3,fill:css(whoC[d.who])},s);
   hover(r,`<b>${d.s}</b> · ${d.who}<br>${d.sec} 秒${d.usd!=null?' · $'+d.usd.toFixed(3):''}<br>${d.res}`);
-  const vl=el('text',{x:L+w+6,y:y+14},s);vl.textContent=key==='sec'?v+'s':'$'+v.toFixed(2)+(d.res.startsWith('返工')?' ⟲':'');
-  if(key==='sec'&&d.res.startsWith('返工'))vl.textContent+=' ⟲';});
- const sep=el('line',{x1:0,x2:W,y1:10+8*rowH+6,y2:10+8*rowH+6,class:'axis','stroke-dasharray':'3 3'},s);
+  txt(s,{x:L+w+6,y:y+14},(key==='sec'?v+'s':'$'+v.toFixed(2))+(d.rework?' ⟲':''));});
+ el('line',{x1:0,x2:W,y1:10+8*rowH+6,y2:10+8*rowH+6,class:'axis','stroke-dasharray':'3 3'},s);
 }
 tabs($('#t4Ctl'),[{label:'耗时（秒）',k:'sec'},{label:'DeepSeek 费用（$）',k:'usd'}],it=>drawT4(it.k),0);
 
 /* ---------- T5 ---------- */
 const T5=[['A','Flash',1,15.3],['A','Pro',1,31.9],['B','Flash',1,20.3],['B','Pro',1,76.5],['C','Flash',1,25.5],['C','Pro',1,49.9],
  ['A','Flash',2,14.6],['A','Pro',2,33.9],['B','Flash',2,18.0],['B','Pro',2,46.2],['C','Flash',2,21.8],['C','Pro',2,94.5]];
-(function(){const W=640,H=200,L=40,R=20,T=12,B=34,s=svg(W,H);$('#t5Chart').appendChild(s);const max=100;
- const X=v=>L+(W-L-R)*v/max;const rows=['A','B','C'];const rh=(H-T-B)/3;
- for(let g=0;g<=5;g++){const x=X(g*20);el('line',{x1:x,x2:x,y1:T,y2:H-B,class:'axis'},s);const t=el('text',{x,y:H-B+16,'text-anchor':'middle'},s);t.textContent=g*20+'s'}
- rows.forEach((r,i)=>{const t=el('text',{x:L-12,y:T+rh*i+rh/2+4,'text-anchor':'end'},s);t.textContent='题 '+r});
- // failed scaffold run
- const fy=T+rh*0+rh/2-8;const f=el('circle',{cx:X(15.1),cy:fy,r:6,fill:'none',stroke:css('--bad'),'stroke-width':2},s);hover(f,'<b>A · Flash · 第 1 次（首跑）</b><br>15.1 秒 · 验收退出码 1<br>原因是闸门配置，不是模型；重跑即过');
- T5.forEach(([r,m,k,v])=>{const i=rows.indexOf(r);const cy=T+rh*i+rh/2+(m==='Pro'?8:(k===1?0:0))-(m==='Flash'?0:0)+(m==='Pro'?0:0);
-  const c=el('circle',{cx:X(v),cy:T+rh*i+rh/2+(m==='Pro'?7:-1)+(k===2?0:0),r:6,fill:css(m==='Pro'?'--c2':'--c1'),opacity:.9},s);
-  hover(c,`<b>题 ${r} · ${m} · 第 ${k} 次</b><br>${v} 秒 · 验收通过`)});
- const avg=[['Flash',19.25,'--c1'],['Pro',55.48,'--c2']];avg.forEach(([m,v,c])=>{const x=X(v);el('line',{x1:x,x2:x,y1:T,y2:H-B,stroke:css(c),'stroke-dasharray':'4 3','stroke-width':1.5},s);const t=el('text',{x:x+4,y:T+10},s);t.textContent=m+' 均值 '+v.toFixed(0)+'s';t.setAttribute('fill',css(c))});
+(function(){const W=640,H=200,L=52,R=20,T=12,B=34,s=svg(W,H);$('#t5Chart').appendChild(s);
+ const X=v=>L+(W-L-R)*v/100;const rows=['A','B','C'];const rh=(H-T-B)/3;
+ for(let g=0;g<=5;g++){const x=X(g*20);el('line',{x1:x,x2:x,y1:T,y2:H-B,class:'axis'},s);txt(s,{x,y:H-B+16,'text-anchor':'middle'},g*20+'s')}
+ rows.forEach((r,i)=>txt(s,{x:L-12,y:T+rh*i+rh/2+4,'text-anchor':'end'},'题 '+r));
+ hover(el('circle',{cx:X(15.1),cy:T+rh/2-9,r:6,fill:'none',stroke:css('--bad'),'stroke-width':2},s),'<b>题 A · Flash · 第一次</b><br>15.1 秒 · 被闸门配置拒绝，不是模型的问题；重跑通过');
+ T5.forEach(([r,m,k,v])=>{const i=rows.indexOf(r);
+  hover(el('circle',{cx:X(v),cy:T+rh*i+rh/2+(m==='Pro'?7:-1),r:6,fill:css(m==='Pro'?'--c2':'--c1'),opacity:.9},s),`<b>题 ${r} · ${m} · 第 ${k} 次</b><br>${v} 秒 · 通过`)});
+ [['Flash',19.25,'--c1'],['Pro',55.48,'--c2']].forEach(([m,v,c])=>{const x=X(v);el('line',{x1:x,x2:x,y1:T,y2:H-B,stroke:css(c),'stroke-dasharray':'4 3','stroke-width':1.5},s);txt(s,{x:x+4,y:T+10},m+' 平均 '+v.toFixed(0)+'s').setAttribute('fill',css(c))});
 })();
 
 /* ---------- T6 ---------- */
-(function(){const M=[['轮数',3,6,''],['回答的问题',7,16,' 题'],['耗时',46,143,' 秒'],['定稿测试条数',9,13,' 条']];
- const W=640,rh=46,H=M.length*rh+16,L=120,s=svg(W,H);$('#t6Chart').appendChild(s);const mid=L+(W-L)/2;
- const a=el('text',{x:mid-8,y:10,'text-anchor':'end'},s);a.textContent='Opus 子代理';a.setAttribute('fill',css('--c4'));
- const b=el('text',{x:mid+8,y:10},s);b.textContent='DeepSeek Flash';b.setAttribute('fill',css('--c1'));
+(function(){const M=[['轮数',3,6,''],['回答的问题',7,16,' 个'],['耗时',46,143,' 秒'],['定稿测试项',9,13,' 项']];
+ const W=640,rh=46,H=M.length*rh+16,L=140,s=svg(W,H);$('#t6Chart').appendChild(s);const mid=L+(W-L)/2;
+ txt(s,{x:mid-8,y:10,'text-anchor':'end'},'Opus 子代理').setAttribute('fill',css('--c4'));
+ txt(s,{x:mid+8,y:10},'DeepSeek Flash').setAttribute('fill',css('--c1'));
  M.forEach(([k,o,d,u],i)=>{const y=22+i*rh,mx=Math.max(o,d),half=(W-L)/2-50;
-  const t=el('text',{x:0,y:y+17},s);t.textContent=k;
-  const wo=half*o/mx,wd=half*d/mx;
-  const r1=el('rect',{x:mid-wo,y,width:wo,height:24,rx:3,fill:css('--c4')},s);hover(r1,`Opus：${o}${u}`);
-  const r2=el('rect',{x:mid,y,width:wd,height:24,rx:3,fill:css('--c1')},s);hover(r2,`DeepSeek：${d}${u}`);
-  const t1=el('text',{x:mid-wo-6,y:y+17,'text-anchor':'end'},s);t1.textContent=o;
-  const t2=el('text',{x:mid+wd+6,y:y+17},s);t2.textContent=d;});
+  txt(s,{x:0,y:y+17},k);const wo=half*o/mx,wd=half*d/mx;
+  hover(el('rect',{x:mid-wo,y,width:wo,height:24,rx:3,fill:css('--c4')},s),`Opus：${o}${u}`);
+  hover(el('rect',{x:mid,y,width:wd,height:24,rx:3,fill:css('--c1')},s),`DeepSeek：${d}${u}`);
+  txt(s,{x:mid-wo-6,y:y+17,'text-anchor':'end'},o);txt(s,{x:mid+wd+6,y:y+17},d);});
 })();
+
+/* ---------- patch log ---------- */
+const PL=[
+ ['规则说主对话只负责路由——可 11 月 9 日它自己改了文件。只靠提示词的规则是会被违反的（一个外部实验：五次里有一次）。','结构化路由器：一个拦住主对话自己改文件的 hook','T1 里成功了。从未上线。'],
+ ['状态文件（RUNNING / DONE）从来没有被任何东西写过；信箱每 30 分钟轮询一次。','异步完成事件 + 账本','账本上线了；v2.0 删除。'],
+ ['执行者没干完就说“干完了”；DeepSeek 不知道什么时候该停（T6）。','完成闸门：验收命令 + 允许清单 + 非空 diff','成了 v1.0 死锁的原因。'],
+ ['仓库历史里留着旧答案，执行者可能会抄。','每个任务都用仓库的沙箱副本','结果又得搬回来。已删除。'],
+ ['省流模式里的规划由 Haiku 做，设计判断力因此变弱。','再加一层：Haiku 转达，由更强的模型来提问（T6）','DeepSeek 问个不停；Haiku 转达时把一个问题的意思弄错了。'],
+ ['Haiku 有一条“小事”豁免，它用这条豁免悄悄自己干活。','v0.4.1：取消豁免；主对话只负责说话','于是每条消息都多了一个问题：“这条我要不要转发？”'],
+ ['主对话还得挑档位、挑流水线。','v0.5：主对话只转达；由一个新开的 Opus 总管决定一切','Haiku 分不清话是对谁说的（第 5 节）。'],
+ ['Haiku 判断不了什么该转发。','v1.0：把路由缩减成三路分类；由脚本强制停止','仍然是判断；另外还多了一个带 30 个测试的新脚本。'],
+ ['返工卡把原始规格整段贴了进去，里面有闸门命令行 → “闸门配置错误”（退出码 6）。','一条规则：粘贴前先剥掉闸门行','一条关于格式规则的规则。'],
+ ['跨轮次时，闸门只能看到当前轮的改动；更早的违规就看不见了。','结束时再做一次全任务范围复查','更多机器来检查机器。'],
+ ['验收命令需要一个文件，而允许清单禁止它。','无补丁可打','全部删掉（v2.0）。']];
+let pShown=1;const plog=$('#plog');
+PL.forEach((p,i)=>{const d=document.createElement('div');d.className='pstep';d.innerHTML=`<div class="pb">${p[0]}</div><div class="pa">→</div><div class="pp"><b>${p[1]}</b><small>${p[2]}</small></div>`;plog.appendChild(d)});
+function renderP(){[...plog.children].forEach((c,i)=>c.classList.toggle('shown',i<pShown));$('#pCnt').textContent=`${pShown} / ${PL.length}`}
+$('#pNext').onclick=()=>{pShown=Math.min(PL.length,pShown+1);renderP()};
+$('#pPrev').onclick=()=>{pShown=Math.max(1,pShown-1);renderP()};
+$('#pAll').onclick=()=>{pShown=PL.length;renderP()};
+renderP();
+
+/* ---------- mechanism board ---------- */
+const VS=['0.3','0.4','0.5','1.0','2.0','2.1'];
+const VD={'0.3':'最初版','0.4':'V2','0.5':'转达层','1.0':'分档 + 闸门','2.0':'大砍','2.1':'现在'};
+const CATS=['路由','检查','流程','状态与隔离'];
+const CC={'路由':'--eco','检查':'--accent','流程':'--sta','状态与隔离':'--c4'};
+// [name, category, born, died (null = alive), flag]
+const M=[
+ ['主对话固定为 Haiku','路由','0.3','0.4'],['三模式表（普通 / 省流 / 全量）','路由','0.3','0.4'],['60% 额度阈值','路由','0.3','0.4'],
+ ['DeepSeek 负责“项目管理”','路由','0.3','0.4'],
+ ['额度分档 80% / 70%','路由','0.4','1.0','从未验证'],['带过期时间的手动档位覆盖','路由','0.4','1.0','从未上线'],
+ ['短命 Opus 总管','路由','0.4','1.0'],['DeepSeek Pro 总管（省流）','路由','0.4','1.0'],
+ ['结构化路由器 hook','路由','0.4','1.0','从未上线'],['主对话只负责转达','路由','0.5','1.0'],
+ ['Haiku 三路分类','路由','1.0','2.0'],['档位 = 主对话模型','路由','1.0',null],['默认：交给 DeepSeek','路由','2.1',null],
+ ['Haiku 轻量验收','检查','0.3','0.4'],['Flash 初审','检查','0.4','1.0'],['强模型终审','检查','0.4',null],
+ ['完成闸门','检查','0.4','2.0'],['失败升级','检查','0.4','1.0'],['全任务范围复查','检查','1.0','2.0'],
+ ['机器本身的单元测试（9→20→30）','检查','0.4','2.0'],['硬性轮数上限','检查','1.0',null],
+ ['给 Opus 的 Flash 代码摘要','流程','0.4','1.0'],['写规格步骤','流程','0.4','1.0'],['提示词模板（×7）','流程','0.4','2.0'],
+ ['返工 ≤ 1 轮','流程','0.4','1.0'],['loop 模式','流程','0.4','1.0','从未测试'],['计划头额度 hook','流程','0.4','1.0','从未上线'],
+ ['由更强模型做拷问','流程','0.4','1.0'],['写卡步骤','流程','1.0','2.0'],['返工 ≤ 3 轮','流程','1.0','2.0'],
+ ['信箱 + ACK','状态与隔离','0.3','0.4'],['RUNNING / DONE 状态文件','状态与隔离','0.3','0.4','没有任何东西写它们'],
+ ['沙箱副本','状态与隔离','0.4','1.0'],['账本','状态与隔离','0.4','2.0'],['SubagentStop hook','状态与隔离','0.4','1.0','从未上线'],
+ ['看门狗','状态与隔离','0.4','1.0','从未上线']];
+const vi=v=>VS.indexOf(v);
+const alive=(m,v)=>vi(m[2])<=vi(v)&&(m[3]===null||vi(m[3])>vi(v));
+const vbar=$('#vbar'),board=$('#board');
+VS.forEach((v,i)=>{const b=document.createElement('button');b.innerHTML=`${v}<small>${VD[v]}</small>`;b.onclick=()=>showVer(i);vbar.appendChild(b)});
+function drawM(cur){const box=$('#mchart');box.innerHTML='';const W=640,H=150,L=30,B=24,T=10,s=svg(W,H);box.appendChild(s);
+ const counts=VS.map(v=>CATS.map(c=>M.filter(m=>m[1]===c&&alive(m,v)).length));const max=Math.max(...counts.map(a=>a.reduce((x,y)=>x+y,0)));
+ const bw=(W-L)/VS.length;
+ counts.forEach((cs,i)=>{let y=H-B;const x=L+i*bw+bw*.25,w=bw*.5;
+  cs.forEach((n,j)=>{const h=(H-B-T)*n/max;if(!n)return;y-=h;const r=el('rect',{x,y,width:w,height:h,fill:css(CC[CATS[j]]),opacity:i===cur?1:.35},s);hover(r,`v${VS[i]} · ${CATS[j]}：${n}`)});
+  const tot=cs.reduce((a,b)=>a+b,0);txt(s,{x:x+w/2,y:y-5,'text-anchor':'middle'},tot).setAttribute('style','font-weight:600');
+  txt(s,{x:x+w/2,y:H-B+16,'text-anchor':'middle'},VS[i]);});
+}
+function showVer(i){const v=VS[i];[...vbar.children].forEach((b,j)=>b.setAttribute('aria-pressed',i===j));drawM(i);
+ board.innerHTML=CATS.map(c=>`<div><h5 style="color:var(${CC[c]})">${c}</h5>${M.filter(m=>m[1]===c).map(m=>{
+  let cls='unborn';if(alive(m,v))cls='alive'+(m[2]===v&&i>0?' new':'');else if(vi(m[2])<=i)cls='dead';
+  return `<span class="chip ${cls}" title="${m[4]||''}">${m[0]}${m[4]?'<span class="fl">●</span>':''}</span>`}).join('')}</div>`).join('');
+ const n=M.filter(m=>alive(m,v)).length,born=M.filter(m=>m[2]===v).length,died=M.filter(m=>m[3]===v).length;
+ const msg={'0.3':'最初那版规则：固定的 Haiku 前端、模式表，还有没人写过的状态文件。','0.4':'V2 落地：两个档位、一个总管、五阶段流水线、一个闸门、一个账本、沙箱，还有一堆停在图纸上的 hook。','0.5':'在所有东西上面再加一层转达。','1.0':'再做一次减法：分类、闸门、三轮、30 个测试。第一单真实任务就死锁了。','2.0':'几乎全部删掉。','2.1':'剩下的东西：由主对话的模型决定档位，默认交出去，一个轮数上限，一次强模型审查。'}[v];
+ $('#vsum').innerHTML=`<b>v${v}：${n} 个机制存活</b>${i?`（新增 ${born}，删除 ${died}）`:''}。${msg}`;}
+showVer(1);
+
+/* ---------- quiz ---------- */
+const QZ=[
+ {m:'看一下现在我们使用的什么那个 agent 规则。',t:'',src:'真实发给 Haiku 的消息',
+  a:'<b>转发？</b>这是在问项目配置文件的事——v0.5 规定连问题都必须交给总管。<b>自己答？</b>它问的是助手自己的指令，而这些已经在它的上下文里了。今天的 Haiku 直接答了；放在 v0.5 下，这就是违规。'},
+ {m:'最后一个提交信息是在哪里被写的？',t:'',src:'真实发给 Haiku 的消息',
+  a:'<b>转发？</b>提交是 git，git 是项目。<b>自己答？</b>我问的是 Haiku 自己刚说过的东西。只有对话本身，而不是规则，能告诉你该选哪个。'},
+ {m:'这个方案你觉得怎么样？',t:'',src:'示例',
+  a:'“你”指的是转达者——而它被禁止拥有观点。或者“你”指的是“那个 AI”，也就是总管。转达者必须猜：我以为自己到底在跟谁说话。'},
+ {m:'那就这样吧，开始。',t:'',src:'示例',
+  a:'这是对总管三轮之前提出的方案表示同意——但那个总管是一次短命调用，早就不存在了。要转发，就意味着把三轮上下文压缩成一次交接，每压一次都丢一点东西。'}];
+const qz=$('#quiz');
+QZ.forEach(q=>{const d=document.createElement('div');d.className='q';d.innerHTML=`<div class="src">${q.src}</div><div class="msg">${q.m}</div><div class="tr">${q.t}</div><div class="btns"><button>我自己回答</button><button>转给 Opus</button></div><div class="ans">${q.a}</div>`;
+ d.querySelectorAll('button').forEach(b=>b.onclick=()=>{d.querySelectorAll('button').forEach(x=>x.classList.remove('picked'));b.classList.add('picked');d.classList.add('done')});qz.appendChild(d)});
 
 /* ---------- v1 vs v2 ---------- */
 (function(){const W=640,H=150,L=70,s=svg(W,H);$('#v1Chart').appendChild(s);
- const steps1=[['第 1 轮','验收失败：缺 __init__.py','--bad'],['第 2 轮','验收过，闸门判越界','--bad'],['第 3 轮','卡住，手动停掉','--bad']];
- const t=el('text',{x:0,y:40},s);t.textContent='1.0.0';const t2=el('text',{x:0,y:112},s);t2.textContent='2.0.0';
- const bw=(W-L)/3-8;steps1.forEach(([a,b,c],i)=>{const x=L+i*(bw+8);const r=el('rect',{x,y:18,width:bw,height:36,rx:6,fill:'none',stroke:css(c),'stroke-width':1.5},s);hover(r,`<b>${a}</b><br>${b}`);
-  const tx=el('text',{x:x+10,y:34},s);tx.textContent=a;const ty=el('text',{x:x+10,y:48},s);ty.textContent=b;ty.setAttribute('opacity',.8)});
- const r=el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:css('--ok'),opacity:.16},s);el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:'none',stroke:css('--ok'),'stroke-width':1.5},s);
- const a=el('text',{x:L+10,y:106},s);a.textContent='一次';const b2=el('text',{x:L+10,y:120},s);b2.textContent='7 轮 · 11 秒 · 测试 OK';
- hover(r,'<b>2.0.0</b><br>没有闸门、没有验收命令，同一道题直接做完');
+ const st=[['第 1 轮','失败：缺 __init__.py'],['第 2 轮','通过，闸门判越界'],['第 3 轮','卡住，手动终止']];
+ txt(s,{x:0,y:40},'v1.0');txt(s,{x:0,y:112},'v2.0');
+ const bw=(W-L)/3-8;st.forEach(([a,b],i)=>{const x=L+i*(bw+8);hover(el('rect',{x,y:18,width:bw,height:36,rx:6,fill:css('--paper'),stroke:css('--bad'),'stroke-width':1.5},s),`<b>${a}</b><br>${b}`);
+  txt(s,{x:x+10,y:34},a);txt(s,{x:x+10,y:48},b).setAttribute('opacity',.8)});
+ el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:css('--ok'),opacity:.16},s);const r=el('rect',{x:L,y:90,width:bw,height:36,rx:6,fill:'none',stroke:css('--ok'),'stroke-width':1.5},s);
+ txt(s,{x:L+10,y:106},'一次');txt(s,{x:L+10,y:120},'7 轮 · 11 秒 · 测试 OK');
+ hover(r,'<b>v2.0</b><br>没有闸门，没有验收命令——它直接把任务做完了');
 })();
 
-/* ---------- smoke steps ---------- */
-const SM=[
- {label:'2.0.0 原样',tools:['Bash','Read','Edit'],agent:false,write:'—',turns:2,secs:3,cap:'只读小任务能跑通（2 轮、3 秒），但这时还没测子代理。'},
- {label:'+ 允许 Agent',tools:['Bash','Read','Edit'],agent:false,write:'没有 Write 工具',turns:3,secs:6,cap:'只把 Agent 加进允许名单：DeepSeek 报告“本次会话未提供 Agent 与 Write 工具”。允许名单管的是权限，不是工具有没有。'},
- {label:'+ --tools',tools:['Bash','Read'],agent:false,write:'没有 Write 工具',turns:4,secs:7,cap:'再用 --tools 显式列全工具：只剩 Bash 和 Read，更少了。--bare 下这个参数不起作用。'},
- {label:'去掉 --bare（只读）',tools:['Read','Glob','Grep','Agent','Bash'],agent:true,write:'被拒 ✓',turns:4,secs:8,cap:'去掉 --bare，靠独立配置目录和 --strict-mcp-config 隔离：子代理返回 “## Hub”，写文件被拒，目录里没有生成文件。'},
- {label:'去掉 --bare（dev）',tools:['Read','Edit','Write','Glob','Grep','NotebookEdit','TodoWrite','Agent','Bash'],agent:true,write:'子代理写入成功 ✓',turns:3,secs:15,cap:'正常模式：子代理新建 hello.txt，内容 ok，主进程读回确认。'}];
-const ALL=['Read','Edit','Write','Glob','Grep','NotebookEdit','TodoWrite','Agent','Bash'];
-function drawSm(x){const box=$('#smChart');box.innerHTML='';const W=640,H=120,s=svg(W,H);box.appendChild(s);const cw=(W)/ALL.length;
- ALL.forEach((t,i)=>{const on=x.tools.includes(t);const cx=i*cw+4;const r=el('rect',{x:cx,y:10,width:cw-8,height:40,rx:6,fill:on?css(t==='Agent'?'--accent':'--c3'):'none',stroke:on?'none':css('--line'),'stroke-width':1.5,opacity:on?.9:1},s);
-  hover(r,`${t}：${on?'可用':'不可用'}`);const tx=el('text',{x:cx+(cw-8)/2,y:34,'text-anchor':'middle'},s);tx.textContent=t==='NotebookEdit'?'Notebook':t;if(on)tx.setAttribute('fill',css('--bg'));});
- const facts=[`子代理：${x.agent?'成功 ✓':'拿不到 ✗'}`,`写入：${x.write}`,`${x.turns} 轮 · ${x.secs} 秒`];
- facts.forEach((f,i)=>{const t=el('text',{x:4+i*(W/3),y:84},s);t.textContent=f;t.setAttribute('style','font-size:14px');if(i===0)t.setAttribute('fill',css(x.agent?'--ok':'--bad'))});
- $('#smCap').innerHTML='<b>图 6</b> '+x.cap;}
-tabs($('#smCtl'),SM.map((x,i)=>({label:(i+1)+'. '+x.label,x})),it=>drawSm(it.x),0);
-
-/* ---------- lessons ---------- */
-const LS=[
- ['每多一道机器检查，就多一个检查之间互相打架的失败点。','1.0.0 的验收命令要求 __init__.py，允许名单禁止它。执行者无论怎么做都会被其中一个判失败，三轮耗光（图 5）。而写这些检查配置的，正是链条里最弱的那个模型。'],
- ['停止条件交给脚本，不要交给模型的自觉。','T6 里 DeepSeek 把“最多 4 个”当成“必须 4 个”，6 轮还在问（图 4）。一个 --max-turns 就解决了，不需要轮数、闸门、返工三件套。'],
- ['测试全绿不等于做对了；最值钱的是一次强模型的独立终审。','T4 两条路线隐藏验收都是 5/5，测试都通过，但两边都被 Opus 终审打回返工（图 2）。所以现行规则保留的唯一检查就是“Opus 看 diff 和测试”。'],
- ['别让弱模型当路由器。','0.5.0 让 Haiku 判断“这句该自己答还是转给 Opus”，它分不清。判断“该不该转”本身就是判断，而规则又禁止它判断。'],
- ['先真跑一单，再加机制。','1.0.0 的 30 条单元测试（假的 claude）全部通过，真跑第一单就失败。测试验证的是机制本身，不是机制在真实任务里有没有用。'],
- ['给执行者完整的工具，比替它编排流程更有效。','整条“摘要→规格→执行→初审→终审”链，本质上是在用人手编排替代子代理。2.1.0 把子代理还给 DeepSeek 之后，它可以自己拆任务——这正是 Sutton 那句话在小尺度上的样子。'],
- ['写下来的经验只在被读到时才算数；能保住它的是会被执行的东西。','“--bare 会砍掉子代理”在 11-09 被观察到、11-12 被查清、写进两份笔记，2.0.0 还是把它写回了脚本（第 4 节）。2.1.0 把原因写成紧挨着那一行的代码注释。']];
-const LTAG=['论点一 · 架构妨碍','论点二 · 未验证的空想','论点一 · 架构妨碍','论点一 · 架构妨碍','论点二 · 未验证的空想','论点一 · 架构妨碍','论点二 · 未验证的空想'];
-const ol=$('#lessons');LS.forEach(([a,b],i)=>{const li=document.createElement('li');li.innerHTML=`<span class="cl">${LTAG[i]}</span><b>${a}</b><div class="ev2">${b}</div>`;li.onclick=()=>li.classList.toggle('open');if(i===0)li.classList.add('open');ol.appendChild(li)});
+/* ---------- complexity ---------- */
+const CX=[{v:'0.4.1',files:1,bytes:7111,note:'只归档了主规则文件'},{v:'0.5.0',files:13,bytes:23552},{v:'1.0.0',files:13,bytes:65288,note:'包含 30 个单元测试'},{v:'2.0.0',files:3,bytes:8028},{v:'2.1.0',files:3,bytes:9247}];
+function drawCx(key){const W=640,H=230,L=56,B=34,T=14,R=10,s=svg(W,H);const box=$('#cxChart');box.innerHTML='';box.appendChild(s);
+ const max=Math.max(...CX.map(d=>d[key]))*1.12;const bw=(W-L-R)/CX.length;
+ for(let g=0;g<=4;g++){const y=T+(H-T-B)*g/4;el('line',{x1:L,x2:W-R,y1:y,y2:y,class:'axis'},s);const val=max*(1-g/4);txt(s,{x:L-8,y:y+4,'text-anchor':'end'},key==='bytes'?(val/1000).toFixed(0)+'K':val.toFixed(0))}
+ CX.forEach((d,i)=>{const h=(H-T-B)*d[key]/max,x=L+i*bw+bw*.22,w=bw*.56,y=H-B-h;
+  hover(el('rect',{x,y,width:w,height:h,rx:4,fill:d.v==='2.1.0'?css('--accent'):(d.v==='1.0.0'?css('--bad'):css('--c1')),opacity:d.v==='0.4.1'?.45:1},s),`<b>v${d.v}</b><br>${d.files} 个文件 · ${d.bytes.toLocaleString('en')} 字节${d.note?'<br>'+d.note:''}`);
+  txt(s,{x:x+w/2,y:H-B+18,'text-anchor':'middle'},d.v);txt(s,{x:x+w/2,y:y-6,'text-anchor':'middle'},key==='bytes'?(d.bytes/1000).toFixed(1)+'K':d.files);});
+}
+tabs($('#cxCtl'),[{label:'总字节数',k:'bytes'},{label:'文件数',k:'files'}],it=>drawCx(it.k),0);
 
 /* ---------- theme ---------- */
 let theme=null;try{theme=localStorage.getItem('kbl-theme')}catch(e){}
 if(theme)document.documentElement.setAttribute('data-theme',theme);
-$('#themebtn').onclick=()=>{const dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);
+$('#themebtn').onclick=()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=cur==='dark'||(!cur&&matchMedia('(prefers-color-scheme: dark)').matches);
  const nt=dark?'light':'dark';document.documentElement.setAttribute('data-theme',nt);try{localStorage.setItem('kbl-theme',nt)}catch(e){}};
 })();
 </script>
